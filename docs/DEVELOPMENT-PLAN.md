@@ -1,4 +1,4 @@
-# SIGMA — Plan de desarrollo v1
+git# SIGMA — Plan de desarrollo v1
 
 **Versión:** 1.0
 **Fecha:** 2026-03-21
@@ -54,8 +54,7 @@ Fase 8 → sigma-web: PWA React
 
 ```
 packages/sigma-core/
-  pyproject.toml         ← dependencias: behave, pytest
-  behave.ini             ← configuración de paths y steps
+  pyproject.toml         ← dependencias: pytest
   src/sigma_core/
     task_management/
       domain/
@@ -69,9 +68,15 @@ packages/sigma-core/
         project.py
         epic.py
   tests/
-    features/domain/
-    steps/domain/
-    steps/common.py
+    unit/
+      domain/
+        test_value_objects.py
+        test_card.py
+        test_space.py
+        test_card_filter.py
+        test_wip_limit.py
+    fakes/
+    integration/
 ```
 
 ### Orden de desarrollo dentro de la fase
@@ -87,25 +92,25 @@ Orden dentro del feature:
 3. `Url` — validación de formato
 4. `ChecklistItem` — inmutabilidad + métodos `complete/reopen`
 
-Step definitions en `steps/domain/value_objects_steps.py`.
+Tests en `tests/unit/domain/test_value_objects.py`.
 
-**1.3 — Space + WorkflowState** (feature: `space_workflow.feature`)
+**1.3 — Space + WorkflowState** (test: `test_space.py`)
 1. `WorkflowState` — entidad interna, sin comportamiento propio
 2. `Space` — invariantes del workflow, `add_state`, `remove_state`, `is_valid_transition`
 
-Step definitions en `steps/domain/space_workflow_steps.py`.
+Tests en `tests/unit/domain/test_space.py`.
 
-**1.4 — Card** (features: `card_stage.feature` + `card_content.feature`)
-1. Construcción y discriminated union (`card_stage.feature`)
-2. Operaciones sobre listas: labels, topics, urls, checklist, related cards (`card_content.feature`)
+**1.4 — Card** (test: `test_card.py`)
+1. Construcción y discriminated union
+2. Operaciones sobre listas: labels, topics, urls, checklist, related cards
 
-Step definitions en `steps/domain/card_steps.py`.
+Tests en `tests/unit/domain/test_card.py`.
 
 **1.5 — Area, Project, Epic**
 Sin feature file dedicado — se cubren en `para_assignment.feature` (Fase 3).
 Solo construcción y validaciones básicas de invariantes.
 
-**Entregable de Fase 1:** suite behave verde para `tests/features/domain/`.
+**Entregable de Fase 1:** `uv run pytest tests/unit/domain/` verde.
 
 ---
 
@@ -121,7 +126,7 @@ Solo construcción y validaciones básicas de invariantes.
 Features: `card_filter.feature` + `wip_limit.feature`.
 Step definitions en `steps/domain/card_filter_steps.py` y `steps/domain/wip_limit_steps.py`.
 
-**Entregable de Fase 2:** `card_filter.feature` y `wip_limit.feature` en verde.
+**Entregable de Fase 2:** `uv run pytest tests/unit/domain/test_card_filter.py tests/unit/domain/test_wip_limit.py` verde.
 
 ---
 
@@ -189,7 +194,7 @@ Orden: `CreateArea` → `CreateProject` → `CreateEpic` → `AssignProject` (in
 `GetCard`, `GetCardsBySpace`, `GetCardsByWorkflowState`, etc.
 Sin feature file dedicado — se usan en los Background de otros tests.
 
-**Entregable de Fase 3:** todos los feature files de `use_cases/` en verde con fakes.
+**Entregable de Fase 3:** `uv run pytest tests/unit/use_cases/` verde con fakes.
 
 ---
 

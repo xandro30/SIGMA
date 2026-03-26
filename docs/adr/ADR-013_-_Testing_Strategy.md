@@ -1,7 +1,8 @@
-# ADR-013: Estrategia de testing — BDD con behave + Gherkin
+# ADR-013: Estrategia de testing — TDD con pytest
 
 **Estado:** Aceptado
-**Fecha:** 2026-03-21
+**Fecha:** 2026-03-24
+**Reemplaza:** versión anterior con behave + Gherkin
 
 ## Contexto
 
@@ -9,117 +10,104 @@
 y casos de uso. Es el núcleo más crítico y el que más se beneficia de una
 cobertura deliberada. Se necesita una estrategia de testing que:
 
-- Documente el comportamiento de negocio de forma legible
+- Sea intuitiva y de bajo fricción para un único desarrollador
+- Evite múltiples fuentes de verdad
 - Identifique los casos conflictivos sin generar tests redundantes
-- Mantenga el vínculo explícito entre especificación y ejecución
-- Sea sostenible para un único desarrollador
+- Permita un ciclo TDD rápido
 
 ## Decisión
 
-Feature files Gherkin ejecutados con **behave** como framework BDD.
-Tests de integración con **pytest** para los adaptadores Firestore.
+**pytest** como único framework de testing para dominio e integración.
+Los tests siguen la semántica Given/When/Then como comentarios inline
+— no como infraestructura ejecutable separada.
 
-Los escenarios en cada feature file siguen esta taxonomía deliberada:
+```python
+def test_card_title_valido_se_crea_correctamente():
+    # Given
+    text = "Implementar login con Google"
+
+    # When
+    result = CardTitle(text)
+
+    # Then
+    assert isinstance(result, CardTitle)
+    assert result.value == text
+```
+
+Los tests se organizan en tres categorías deliberadas:
 
 | Categoría | Qué cubre |
 |---|---|
 | **Happy path** | Flujo nominal completo — define el comportamiento esperado |
-| **Validation fails** | Invariantes de VOs y Aggregates — Fail Fast en construcción |
-| **Business rule violations** | Reglas de negocio: transición inválida, WIP limit, auto-referencia |
-| **Edge cases** | Colección vacía, un solo elemento, idempotencia, operación repetida |
+| **Edge cases** | Colección vacía, un solo elemento, idempotencia, auto-referencia |
 | **Boundary Value Analysis** | Rangos con límite: valor en el límite, uno dentro, uno fuera |
 
 Lo que **no** se testea: combinaciones arbitrarias de campos válidos,
-comportamientos ya cubiertos por otro escenario, internals de implementación.
+comportamientos ya cubiertos por otro test, internals de implementación.
 
 ## Estructura
 
 ```
 sigma-core/
   tests/
-    features/
+    unit/
       domain/
-        value_objects.feature
-        card_stage.feature
-        card_content.feature
-        space_workflow.feature
-        card_filter.feature
-        wip_limit.feature
+        test_value_objects.py
+        test_card.py
+        test_space.py
+        test_card_filter.py
+        test_wip_limit.py
       use_cases/
-        create_card.feature
-        move_card.feature
-        promote_demote.feature
-        para_assignment.feature
-    steps/               ← step definitions behave
-      domain/
-      use_cases/
-      common.py          ← steps reutilizables entre features
-    integration/         ← adaptadores contra emulador Firestore (pytest)
+        test_create_card.py
+        test_move_card.py
+        test_promote_demote.py
+        test_para_assignment.py
+    fakes/
+      fake_card_repository.py
+      fake_space_repository.py
+      fake_area_repository.py
+      fake_project_repository.py
+      fake_epic_repository.py
+    integration/           ← adaptadores contra emulador Firestore
 ```
-
-Los feature files en `tests/features/` son la fuente de verdad del
-comportamiento. Los step definitions en `tests/steps/` los conectan
-con el código de dominio. behave los ejecuta como suite completa.
 
 ## Razonamiento
 
-behave lee los `.feature` en Gherkin y ejecuta cada línea
-`Given/When/Then` a través de step definitions — funciones Python
-decoradas que mapean texto a código:
+La aproximación BDD con behave + feature files fue evaluada y descartada
+por las siguientes razones concretas:
 
-```python
-@given('una Card en pre_workflow_stage = BACKLOG')
-def step_impl(context):
-    context.card = Card(pre_workflow_stage=PreWorkflowStage.BACKLOG, ...)
+- **Dos fuentes de verdad**: el feature file y el step definition deben
+  mantenerse sincronizados manualmente. Cuando el dominio cambia, hay que
+  actualizar ambos — es complejidad accidental sin beneficio real para un
+  único desarrollador.
+- **Fricción alta**: los step definitions son infraestructura de testing
+  pura que no aporta lógica de negocio. Escribir un step por cada línea
+  Gherkin ralentiza el ciclo TDD sin añadir cobertura.
+- **Poca intuitividad**: la separación entre feature file y step definitions
+  dificulta la lectura — para entender un test hay que navegar entre dos
+  ficheros y entender el mecanismo de matching por texto.
 
-@when('se llama a move_to_workflow_state("uuid-state")')
-def step_impl(context):
-    context.card.move_to_workflow_state(WorkflowStateId("uuid-state"))
-
-@then('workflow_state_id es "uuid-state"')
-def step_impl(context):
-    assert context.card.workflow_state_id == WorkflowStateId("uuid-state")
-```
-
-Los beneficios concretos que justifican esta elección:
-
-- El `.feature` y el test están **explícitamente vinculados** — no hay
-  ambigüedad entre especificación e implementación
-- La salida de behave muestra los **escenarios por nombre**, más legible
-  que nombres de funciones pytest en la revisión diaria
-- La disciplina de escribir step definitions obliga a que cada línea
-  Gherkin sea **ejecutable** — los `.feature` no pueden quedar
-  desactualizados sin que los tests fallen
-- Los step definitions son **reutilizables** entre escenarios — el paso
-  `Given una Card en pre_workflow_stage = BACKLOG` se escribe una vez
-  y lo usan todos los escenarios que lo necesiten
-
-Nota: **Cucumber no aplica aquí** — es el framework BDD equivalente para
-Ruby, Java y JavaScript. behave es su equivalente directo para Python.
+pytest con comentarios Given/When/Then inline consigue el mismo valor
+semántico sin la infraestructura adicional. El test es autocontenido,
+directamente ejecutable, y la fuente de verdad es única.
 
 ## Alternativas consideradas
 
-- **Solo pytest sin Gherkin**: tests rápidos pero sin vínculo explícito
-  entre especificación y ejecución. Los escenarios de negocio quedan
-  como comentarios que pueden desincronizarse del código. Descartado.
-- **Feature files sin ejecutar (solo documentación)**: los `.feature`
-  quedan desactualizados inevitablemente si no hay nada que los valide.
-  Descartado.
-- **pytest con comentarios Given/When/Then inline**: mismo resultado
-  visual pero sin la disciplina que impone behave ni la reutilización
-  de steps. Descartado.
+- **behave + Gherkin**: evaluado e implementado parcialmente. Descartado
+  por las razones expuestas — dos fuentes de verdad, alta fricción,
+  baja intuitividad para un único desarrollador.
+- **unittest**: más verboso que pytest, sin ventajas adicionales para
+  este caso. Descartado.
 
 ## Consecuencias
 
-- Los feature files se escriben **antes** que el código de producción
-  (BDD-first) — son la especificación ejecutable
-- Todo escenario en un feature file tiene su step definition correspondiente
-- Los step definitions comunes se extraen a `steps/common.py` para
-  evitar duplicación entre features
-- La cobertura se mide por comportamientos relevantes, no por líneas
-- Los tests de dominio son unitarios puros — sin mocks, sin base de datos.
-  Solo objetos de dominio en memoria
-- La integración con Firestore se cubre en `tests/integration/` con el
-  emulador local de Firestore usando pytest
-- Ejecución: `behave tests/features/` para el dominio,
-  `uv run pytest tests/integration/` para los adaptadores
+- Una única fuente de verdad — el código de producción y sus tests
+- Ciclo TDD directo: escribe el test, vélo fallar, implementa, vélo pasar
+- Los tests de dominio son unitarios puros — sin mocks, sin base de datos,
+  solo objetos de dominio en memoria
+- Los fakes en `tests/fakes/` implementan los Protocols de repositorio
+  con diccionarios en memoria para los tests de casos de uso
+- La integración con Firestore se cubre en `tests/integration/`
+  con el emulador local de Firestore
+- Ejecución: `uv run pytest` para todo, `uv run pytest tests/unit/`
+  para solo dominio, `uv run pytest tests/integration/` para adaptadores
