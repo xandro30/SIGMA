@@ -85,3 +85,16 @@ def test_add_transition_adds_valid_transition():
     space.add_transition(BEGIN_STATE_ID, in_progress_id)
 
     assert Transition(from_id=BEGIN_STATE_ID, to_id=in_progress_id) in space.transitions
+
+
+def test_remove_state_also_removes_its_transitions():
+    in_progress_id = WorkflowStateId.generate()
+    state = WorkflowState(id=in_progress_id, name="In Progress", order=1)
+    space = Space(id=SpaceId.generate(), name=SpaceName("Work"))
+    space.add_state(state)
+    space.add_transition(BEGIN_STATE_ID, in_progress_id)
+    space.add_transition(in_progress_id, FINISH_STATE_ID)
+
+    space.remove_state(in_progress_id)
+
+    assert len(space.transitions) == 0
