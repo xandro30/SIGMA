@@ -166,7 +166,7 @@ Los filtros activos se muestran como chips eliminables. El tablero filtra en tie
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  [🔍]  Prioridad: HIGH, CRITICAL ✕   Área: BBVA ✕       │
+│  [🔍]  Prioridad: HIGH, CRITICAL ✕   Área: WORK ✕       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -188,7 +188,7 @@ Se abre como panel lateral (slide-in desde la derecha) sin abandonar el tablero.
 │                                                      │
 │  ┌─── CLASIFICACIÓN ───────────────────────────┐    │
 │  │  Prioridad  [HIGH ▼]                        │    │
-│  │  Área       [BBVA ▼]                        │    │
+│  │  Área       [WORK ▼]                        │    │
 │  │  Proyecto   [N3 SecOps ▼]                   │    │
 │  │  Epic       [Auth Module ▼]                 │    │
 │  │  Fecha      [25/03/2026 📅]                 │    │
@@ -248,7 +248,7 @@ Navegación jerárquica: Área → Proyectos → Cards.
 ┌──────────┬──────────────────────────────────────────────────────┐
 │          │  ÁREAS Y PROYECTOS                                    │
 │  ○ Board │                                                        │
-│  ● Areas │  ┌─ BBVA ──────────────────────────────────────────┐ │
+│  ● Areas │  ┌─ WROK ──────────────────────────────────────────┐ │
 │  ○ Epics │  │  Plataforma de ciberseguridad para SecOps        │ │
 │          │  │  Objetivos: PSOE cert · Chronicle SOAR prod       │ │
 │  ──────  │  │                                                    │ │

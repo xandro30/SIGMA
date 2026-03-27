@@ -534,7 +534,7 @@ Lista todas las Areas con sus Projects.
 {
   "areas": [
     {
-      "id": "uuid", "name": "BBVA", "description": "...",
+      "id": "uuid", "name": "WORK", "description": "...",
       "projects": [
         { "id": "uuid", "name": "N3 SecOps", "status": "active", "cards_count": 14 }
       ]

@@ -486,7 +486,7 @@ Lista todas las Areas.
   "areas": [
     {
       "id": "uuid",
-      "name": "BBVA",
+      "name": "WORK",
       "description": "Plataforma de ciberseguridad",
       "objectives": ["PSOE cert", "Chronicle SOAR prod"],
       "created_at": "...",
@@ -502,7 +502,7 @@ Lista todas las Areas.
 
 **Request:**
 ```json
-{ "name": "BBVA", "description": "...", "objectives": ["..."] }
+{ "name": "WORK", "description": "...", "objectives": ["..."] }
 ```
 
 **Response `201`:** Area creada.
