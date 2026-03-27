@@ -1,5 +1,5 @@
 import pytest
-from sigma_core.task_management.domain.area import Area
+from sigma_core.task_management.domain.entities.area import Area
 from sigma_core.task_management.domain.value_objects import AreaId, Timestamp
 
 

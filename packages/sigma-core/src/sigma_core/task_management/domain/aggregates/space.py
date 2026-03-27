@@ -31,8 +31,8 @@ class WorkflowState:
 class Space:
     id: SpaceId
     name: SpaceName
-    workflow_states: list[WorkflowState]
-    transitions: list[Transition]
+    workflow_states: list[WorkflowState] = field(default_factory=list)
+    transitions: list[Transition] = field(default_factory=list)
     created_at: Timestamp = field(default_factory=Timestamp.now)
     updated_at: Timestamp = field(default_factory=Timestamp.now)
 

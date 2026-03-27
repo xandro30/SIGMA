@@ -1,8 +1,8 @@
 import pytest
 
 from sigma_core.task_management.domain.errors import DuplicateChecklistItemError
-from sigma_core.task_management.domain.space import WorkflowStateId
-from sigma_core.task_management.domain.card import Card
+from sigma_core.task_management.domain.aggregates.space import WorkflowStateId
+from sigma_core.task_management.domain.aggregates.card import Card
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
 from sigma_core.task_management.domain.value_objects import (
     CardId, SpaceId, CardTitle, Timestamp, ChecklistItem, Url, EpicId, ProjectId, AreaId

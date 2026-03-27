@@ -1,3 +1,4 @@
+from datetime import date
 from dataclasses import dataclass, field
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
 from sigma_core.task_management.domain.errors import DuplicateChecklistItemError
@@ -14,9 +15,8 @@ class Card:
     title: CardTitle
     pre_workflow_stage: PreWorkflowStage | None
     workflow_state_id: WorkflowStateId | None
-    created_at: Timestamp
-    updated_at: Timestamp
     description: str | None = None
+    due_date: date | None = None
     priority: Priority | None = None
     area_id: AreaId | None = None
     project_id: ProjectId | None = None
@@ -26,6 +26,8 @@ class Card:
     urls: list[Url] = field(default_factory=list)
     checklist: list[ChecklistItem] = field(default_factory=list)
     related_cards: list[CardId] = field(default_factory=list)
+    created_at: Timestamp = field(default_factory=Timestamp.now)
+    updated_at: Timestamp = field(default_factory=Timestamp.now)
 
     def __post_init__(self) -> None:
         both_set = self.pre_workflow_stage is not None and self.workflow_state_id is not None

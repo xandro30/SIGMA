@@ -1,6 +1,6 @@
 import pytest
 
-from sigma_core.task_management.domain.space import Space, BEGIN_STATE_ID, FINISH_STATE_ID, WorkflowState, Transition, WorkflowStateId
+from sigma_core.task_management.domain.aggregates.space import Space, BEGIN_STATE_ID, FINISH_STATE_ID, WorkflowState, Transition, WorkflowStateId
 from sigma_core.task_management.domain.errors import InvalidWorkflowError, DuplicateStateError
 from sigma_core.task_management.domain.value_objects import SpaceId, SpaceName
 

@@ -1,6 +1,6 @@
 import pytest
 
-from sigma_core.task_management.domain.project import Project
+from sigma_core.task_management.domain.entities.project import Project
 from sigma_core.task_management.domain.enums import ProjectStatus
 from sigma_core.task_management.domain.value_objects import ProjectId, AreaId, Timestamp
 
