@@ -1,10 +1,10 @@
-# tests/unit/domain/test_value_objects.py
-
-import uuid
 import pytest
+from datetime import datetime
+import uuid
+
 from sigma_core.task_management.domain.value_objects import (
     CardId, SpaceId, WorkflowStateId, AreaId, ProjectId, EpicId,
-    CardTitle, SpaceName, Url, ChecklistItem,
+    CardTitle, Url, ChecklistItem, Timestamp
 )
 
 
@@ -206,3 +206,16 @@ def test_todos_los_ids_siguen_el_mismo_patron():
 
         with pytest.raises(ValueError):
             IdClass("no-es-un-uuid")
+
+
+def test_timestamp_now_creates_madrid_timezone():
+    result = Timestamp.now()
+
+    assert result.value.tzinfo is not None
+    assert result.value.tzinfo.key == "Europe/Madrid"
+
+
+def test_timestamp_naive_datetime_raises_value_error():
+
+    with pytest.raises(ValueError):
+        Timestamp(datetime(2026, 1, 1))

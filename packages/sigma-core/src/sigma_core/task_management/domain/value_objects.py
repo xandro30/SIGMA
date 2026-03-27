@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import urllib.parse
 import uuid
 from dataclasses import dataclass
@@ -155,3 +157,19 @@ class ChecklistItem:
 
     def reopen(self) -> ChecklistItem:
         return ChecklistItem(text=self.text, done=False)
+
+
+# ── Datetime ─────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class Timestamp:
+    value: datetime
+
+    def __post_init__(self):
+        if self.value.tzinfo is None:
+            raise ValueError("Timestamp must be timezone-aware")
+
+    @classmethod
+    def now(cls) -> "Timestamp":
+        return cls(datetime.now(ZoneInfo("Europe/Madrid")))
