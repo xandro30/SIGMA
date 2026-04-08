@@ -384,6 +384,35 @@ Devuelve una Card al pre-workflow.
 
 ---
 
+### `PATCH /cards/{cardId}/triage-stage`
+
+Mueve una Card dentro del pre-workflow (Triage).
+
+**Reglas de negocio:**
+- La card debe estar en Triage (pre-workflow). Si está en Workflow, usar `/demote` primero.
+- Una card que ha salido de Inbox no puede volver a él.
+- No se puede mover al stage en el que ya está.
+
+**Request:**
+```json
+{ "stage": "refinement" }
+```
+
+Valores válidos para `stage`: `"inbox"`, `"refinement"`, `"backlog"`
+
+**Response `200`:** Card actualizada (mismo formato que otros endpoints de cards).
+
+**Errores:**
+
+| Código | error | Causa |
+|--------|-------|-------|
+| `422` | `card_not_in_triage` | La card está en Workflow — usar `/demote` primero |
+| `422` | `inbox_not_allowed` | La card ya salió de Inbox — no puede volver |
+| `409` | `already_in_stage` | La card ya está en ese stage |
+| `404` | `card_not_found` | Card no encontrada |
+
+---
+
 ### `POST /cards/{cardId}/archive`
 
 Mueve la Card al End State del workflow.

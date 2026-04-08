@@ -48,3 +48,15 @@ class DuplicateChecklistItemError(SigmaDomainError):
 
 class InvalidEpicSpaceError(SigmaDomainError):
     """Epic pertenece a un Space distinto al de la Card"""
+
+
+class CardNotInTriageError(SigmaDomainError):
+    """Card is in workflow, not in Triage."""
+
+
+class InboxNotAllowedError(SigmaDomainError):
+    """Card cannot return to Inbox once it has left."""
+
+
+class AlreadyInStageError(SigmaDomainError):
+    """Card is already in that stage."""

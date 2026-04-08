@@ -1,0 +1,33 @@
+services:
+  firestore:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    platform: linux/arm64
+    command: >
+      gcloud emulators firestore start
+      --host-port=0.0.0.0:8080
+      --project=sigma-local
+    ports:
+      - "8080:8080"
+    volumes:
+      - firestore_data:/root/.config/gcloud/emulators/firestore
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  sigma-rest:
+    build:
+      context: .
+      dockerfile: packages/sigma-rest/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - FIRESTORE_PROJECT_ID=sigma-local
+      - FIRESTORE_EMULATOR_HOST=firestore:8080
+    depends_on:
+      firestore:
+        condition: service_healthy
+
+volumes:
+  firestore_data:

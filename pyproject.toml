@@ -1,15 +1,10 @@
 [project]
 name = "sigma"
 version = "0.1.0"
-description = "Add your description here"
+description = "SIGMA — Sistema Inteligente de Gestión y Monitorización de Actividades"
 readme = "README.md"
 requires-python = ">=3.13.11"
-dependencies = [
-    "pytest>=9.0.2",
-]
-
-[project.scripts]
-sigma = "sigma:main"
+dependencies = []
 
 [build-system]
 requires = ["uv_build>=0.9.22,<0.10.0"]
@@ -22,5 +17,19 @@ members = [
     "packages/sigma-rest",
 ]
 
+[tool.pyright]
+include = [
+    "packages/sigma-core/src",
+    "packages/sigma-rest/src",
+    "packages/sigma-mcp/src",
+]
+extraPaths = [
+    "packages/sigma-core/tests",
+]
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+
 [dependency-groups]
-dev = []
+dev = [
+    "pyright",
+]

@@ -1,6 +1,9 @@
 # JetBrains
 .idea/
 
+.vscode/
+sigma.code-workspace
+
 # Python
 __pycache__/
 *.py[cod]
@@ -31,3 +34,10 @@ node_modules/
 
 # Firebase
 .firebase/
+
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+
+# Superpowers — guía de desarrollo (local only)
+docs/superpowers/

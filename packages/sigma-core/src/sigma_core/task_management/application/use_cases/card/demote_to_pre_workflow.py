@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from sigma_core.task_management.domain.enums import PreWorkflowStage
 from sigma_core.task_management.domain.errors import (
-    CardNotFoundError, InvalidTransitionError,
+    CardNotFoundError, InboxNotAllowedError, InvalidTransitionError,
 )
 from sigma_core.task_management.domain.value_objects import CardId
 from sigma_core.task_management.domain.ports.card_repository import CardRepository
@@ -25,6 +25,11 @@ class DemoteToPreWorkflow:
         if card.workflow_state_id is None:
             raise InvalidTransitionError(
                 "Card is not in workflow"
+            )
+
+        if cmd.stage == PreWorkflowStage.INBOX:
+            raise InboxNotAllowedError(
+                "Cannot demote to inbox — inbox is a one-way entry point."
             )
 
         card.move_to_pre_workflow(cmd.stage)

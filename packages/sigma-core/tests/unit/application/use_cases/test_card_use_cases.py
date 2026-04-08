@@ -34,6 +34,12 @@ from sigma_core.task_management.application.use_cases.card.delete_card import (
 )
 from tests.fakes.fake_card_repository import FakeCardRepository
 from tests.fakes.fake_space_repository import FakeSpaceRepository
+from sigma_core.task_management.application.use_cases.card.move_triage_stage import (
+    MoveTriageStage, MoveTriageStageCommand,
+)
+from sigma_core.task_management.domain.errors import (
+    CardNotInTriageError, AlreadyInStageError, InboxNotAllowedError,
+)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────
@@ -74,6 +80,18 @@ def card_in_workflow(space):
         title=CardTitle("Tarea"),
         pre_workflow_stage=None,
         workflow_state_id=BEGIN_STATE_ID,
+    )
+    return card
+
+
+@pytest.fixture
+def card_in_inbox(space):
+    card = Card(
+        id=CardId.generate(),
+        space_id=space.id,
+        title=CardTitle("Tarea en inbox"),
+        pre_workflow_stage=PreWorkflowStage.INBOX,
+        workflow_state_id=None,
     )
     return card
 
@@ -310,3 +328,93 @@ async def test_delete_card_raises_error_if_not_found():
 
     with pytest.raises(CardNotFoundError):
         await use_case.execute(DeleteCardCommand(card_id=CardId.generate()))
+
+
+# ── MoveTriageStage ───────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_move_triage_stage_inbox_to_refinement(card_in_inbox):
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_inbox)
+    use_case = MoveTriageStage(card_repo)
+
+    await use_case.execute(MoveTriageStageCommand(
+        card_id=card_in_inbox.id,
+        target_stage=PreWorkflowStage.REFINEMENT,
+    ))
+
+    updated = await card_repo.get_by_id(card_in_inbox.id)
+    assert updated.pre_workflow_stage == PreWorkflowStage.REFINEMENT
+
+
+@pytest.mark.asyncio
+async def test_move_triage_stage_inbox_to_backlog(card_in_inbox):
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_inbox)
+    use_case = MoveTriageStage(card_repo)
+
+    await use_case.execute(MoveTriageStageCommand(
+        card_id=card_in_inbox.id,
+        target_stage=PreWorkflowStage.BACKLOG,
+    ))
+
+    updated = await card_repo.get_by_id(card_in_inbox.id)
+    assert updated.pre_workflow_stage == PreWorkflowStage.BACKLOG
+
+
+@pytest.mark.asyncio
+async def test_move_triage_stage_card_not_found_raises():
+    card_repo = FakeCardRepository()
+    use_case = MoveTriageStage(card_repo)
+
+    with pytest.raises(CardNotFoundError):
+        await use_case.execute(MoveTriageStageCommand(
+            card_id=CardId.generate(),
+            target_stage=PreWorkflowStage.REFINEMENT,
+        ))
+
+
+@pytest.mark.asyncio
+async def test_move_triage_stage_card_in_workflow_raises(card_in_workflow):
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_workflow)
+    use_case = MoveTriageStage(card_repo)
+
+    with pytest.raises(CardNotInTriageError):
+        await use_case.execute(MoveTriageStageCommand(
+            card_id=card_in_workflow.id,
+            target_stage=PreWorkflowStage.REFINEMENT,
+        ))
+
+
+@pytest.mark.asyncio
+async def test_move_triage_stage_already_in_stage_raises(card_in_inbox):
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_inbox)
+    use_case = MoveTriageStage(card_repo)
+
+    with pytest.raises(AlreadyInStageError):
+        await use_case.execute(MoveTriageStageCommand(
+            card_id=card_in_inbox.id,
+            target_stage=PreWorkflowStage.INBOX,
+        ))
+
+
+@pytest.mark.asyncio
+async def test_move_triage_stage_inbox_not_allowed_raises(space):
+    card_repo = FakeCardRepository()
+    card = Card(
+        id=CardId.generate(),
+        space_id=space.id,
+        title=CardTitle("Tarea en refinement"),
+        pre_workflow_stage=PreWorkflowStage.REFINEMENT,
+        workflow_state_id=None,
+    )
+    await card_repo.save(card)
+    use_case = MoveTriageStage(card_repo)
+
+    with pytest.raises(InboxNotAllowedError):
+        await use_case.execute(MoveTriageStageCommand(
+            card_id=card.id,
+            target_stage=PreWorkflowStage.INBOX,
+        ))

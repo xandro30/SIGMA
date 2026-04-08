@@ -1,16 +1,12 @@
 [project]
 name = "sigma-core"
 version = "0.1.0"
-description = "Add your description here"
+description = "SIGMA — Sistema Inteligente de Gestión y Monitorización de Actividades"
 readme = "README.md"
 requires-python = ">=3.13.11"
 dependencies = [
-    "pydantic>=2.12.0",
-    "pydantic-settings>=2.13.1",
+    "firebase-admin>=6.0.0",
 ]
-
-[project.scripts]
-sigma-core = "sigma_core:main"
 
 [build-system]
 requires = ["uv_build>=0.9.22,<0.10.0"]
@@ -19,6 +15,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=8.3.0",
-    "pytest-asyncio>=0.25.0",
+    "pytest-asyncio>=1.0.0",
     "pytest-cov>=6.0.0",
+    "httpx>=0.28.0",
 ]

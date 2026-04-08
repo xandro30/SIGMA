@@ -35,7 +35,7 @@ El dominio no conoce ni Pydantic ni JSON. Nunca hereda de `BaseModel`.
 jerarquía `SigmaDomainError` a una estructura común `ErrorResult`:
 
 ```python
-# sigma-core/handlers.py
+# sigma-core/error_handlers.py
 
 @dataclass(frozen=True)
 class ErrorResult:

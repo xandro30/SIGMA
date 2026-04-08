@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=DM+Mono:wght@400;500;700&display=swap');
+
+/* ─── Reset ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Root ───────────────────────────────────────────────────────────────────── */
+html, body, #root {
+  height: 100%;
+  background: #060606;
+  color: #F0F0F4;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+p, span, div, h1, h2, h3, h4, h5, label, li, button { color: inherit; }
+
+/* ─── Type scale ─────────────────────────────────────────────────────────────── */
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 15px; font-weight: 700; }
+
+/* ─── Form elements ──────────────────────────────────────────────────────────── */
+input, textarea, select {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #F0F0F4 !important;
+  background: #161618;
+  border: 1.5px solid rgba(255,255,255,0.13);
+  border-radius: 10px;
+  padding: 9px 13px;
+  outline: none;
+  width: 100%;
+  transition: border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #F5C518;
+  box-shadow: 0 0 0 3px rgba(245,197,24,0.12);
+}
+input::placeholder, textarea::placeholder {
+  color: #50525A !important;
+  font-weight: 400;
+}
+select option { background: #161618; color: #F0F0F4; }
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+button {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+button:disabled { cursor: not-allowed; opacity: 0.38; }
+
+/* ─── Focus ring (accessibility) ─────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #F5C518;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* ─── Keyframes ──────────────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ─── Utility classes ────────────────────────────────────────────────────────── */
+.animate-fade-in   { animation: fadeIn    220ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-slide-up  { animation: slideInUp 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-scale-in  { animation: scaleIn   220ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Stagger helper: add --delay CSS var to each child */
+.stagger-children > * {
+  opacity: 0;
+  animation: slideInUp 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
