@@ -214,26 +214,18 @@ export default function EditCardModal({ card, onClose }) {
             {/* Workflow states */}
             <div>
               <p style={{ margin: '0 0 8px', fontSize: '10px', color: '#fff', fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>→ Mover al Workflow</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                {allStates.map(s => {
-                  const isCurrent = isInWorkflow && card.workflow_state_id === s.id;
-                  return (
-                    <button key={s.id} onClick={() => !isCurrent && handleMoveToWorkflow(s.id)} style={{
-                      background: isCurrent ? `${color.yellow}20` : color.s2,
-                      border: `1px solid ${isCurrent ? color.yellow : color.border2}`,
-                      color: isCurrent ? color.yellow : '#fff',
-                      borderRadius: '8px', padding: '9px 14px', cursor: isCurrent ? 'default' : 'pointer',
-                      fontSize: '13px', fontFamily: font.sans, fontWeight: 700, textAlign: 'left',
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                    }}>
-                      {isCurrent
-                        ? <><span style={{ color: color.yellow }}>✓</span> {s.name} <span style={{ fontSize: '10px', color: color.yellow, fontFamily: font.mono }}>(actual)</span></>
-                        : <><span style={{ color: '#888' }}>→</span> {s.name}</>
-                      }
-                    </button>
-                  );
-                })}
-              </div>
+              <select
+                value={isInWorkflow ? card.workflow_state_id : ''}
+                onChange={e => { if (e.target.value) handleMoveToWorkflow(e.target.value); }}
+                style={{ ...F, cursor: allStates.length > 0 ? 'pointer' : 'not-allowed', opacity: allStates.length > 0 ? 1 : 0.5 }}
+              >
+                {!isInWorkflow && <option value="" disabled>Seleccionar estado...</option>}
+                {allStates.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}{isInWorkflow && card.workflow_state_id === s.id ? ' (actual)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
           </Section>
 
