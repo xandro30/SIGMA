@@ -2,8 +2,8 @@
 
 ## SIGMA — Arquitectura del sistema
 
-**Versión:** 1.0
-**Fecha:** 2026-03-21
+**Versión:** 1.1
+**Fecha:** 2026-04-09
 **Estado:** Activo
 
 ---
@@ -50,13 +50,21 @@ flowchart TD
 
 ## 2. Principios arquitectónicos
 
-### Hexagonal Architecture (Ports & Adapters)
+### Arquitectura de núcleo centralizado
 
-El dominio no conoce la infraestructura. `sigma-core` define interfaces (puertos); los adaptadores (`sigma-mcp`, `sigma-rest`) las implementan. El dominio es testeable en aislamiento sin base de datos ni framework.
+`sigma-core` contiene tanto el dominio como los adaptadores de salida (repositorios Firestore). `sigma-rest` y `sigma-mcp` son adaptadores de entrada que orquestan los casos de uso pero no implementan persistencia. Esta decisión centraliza los repositorios en el núcleo para evitar duplicación cuando múltiples adaptadores de entrada comparten el mismo backend (ADR-014).
 
 ```
-[Adaptadores de entrada] → [Casos de uso] → [Dominio] → [Puertos] → [Adaptadores de salida]
+[Adaptadores de entrada]    →   [Casos de uso]  →  [Dominio]
+sigma-rest (REST/FastAPI)       sigma-core          Aggregates, VOs, Enums
+sigma-mcp  (MCP/FastMCP)                            Ports (Protocols)
+                                                    ↓
+                                              [Adaptadores de salida]
+                                              infrastructure/firestore/
+                                              (también en sigma-core)
 ```
+
+El dominio (`domain/`) sigue siendo testeable en aislamiento usando repositorios fake. La infraestructura Firestore es una capa adicional dentro del mismo paquete.
 
 ### Domain-Driven Design (DDD)
 
@@ -81,37 +89,63 @@ Mono-repo con uv workspaces (ADR-001).
 ```
 sigma/
 ├── packages/
-│   ├── sigma-core/          # Dominio + puertos (Python)
+│   ├── sigma-core/                   # Núcleo: dominio + repositorios Firestore
 │   │   ├── src/sigma_core/
 │   │   │   └── task_management/
-│   │   │       ├── domain/
-│   │   │       ├── ports/
-│   │   │       └── use_cases/
+│   │   │       ├── domain/           # Aggregates, entidades, VOs, enums, errores
+│   │   │       │   ├── aggregates/   # space.py, card.py
+│   │   │       │   ├── entities/     # area.py, project.py, epic.py
+│   │   │       │   ├── ports/        # Protocols: CardRepository, SpaceRepository…
+│   │   │       │   ├── enums.py
+│   │   │       │   ├── errors.py
+│   │   │       │   ├── value_objects.py
+│   │   │       │   └── card_filter.py
+│   │   │       ├── application/
+│   │   │       │   ├── use_cases/    # card/, area/, project/, epic/, space/
+│   │   │       │   └── error_handlers.py
+│   │   │       └── infrastructure/
+│   │   │           └── firestore/    # Implementaciones de repositorios Firestore
+│   │   │               ├── config.py
+│   │   │               ├── client.py
+│   │   │               ├── mappers.py
+│   │   │               ├── card_repository.py
+│   │   │               ├── space_repository.py
+│   │   │               ├── area_repository.py
+│   │   │               ├── project_repository.py
+│   │   │               └── epic_repository.py
 │   │   ├── tests/
+│   │   │   ├── unit/
+│   │   │   └── integration/
+│   │   └── pyproject.toml            # deps: firebase-admin
+│   │
+│   ├── sigma-mcp/                    # Adaptador MCP — planificado para v4
+│   │   ├── src/sigma_mcp/            # Esqueleto — no implementado
 │   │   └── pyproject.toml
 │   │
-│   ├── sigma-mcp/           # Adaptador MCP (Python)
-│   │   ├── src/sigma_mcp/
-│   │   ├── tests/
-│   │   └── pyproject.toml
-│   │
-│   ├── sigma-rest/          # Adaptador REST + adaptadores de salida (Python)
+│   ├── sigma-rest/                   # Adaptador REST (FastAPI)
 │   │   ├── src/sigma_rest/
-│   │   │   ├── api/         # Routers FastAPI
-│   │   │   ├── adapters/    # Implementaciones de repositorios (Firestore)
-│   │   │   └── config/
+│   │   │   ├── main.py               # App FastAPI, CORS, exception handlers
+│   │   │   ├── routers/              # areas.py, cards.py, epics.py, projects.py, spaces.py
+│   │   │   ├── schemas/              # Pydantic models request/response
+│   │   │   ├── mappers/              # Domain → Response, Request → Command
+│   │   │   ├── dependencies.py       # DI: factories que proveen repos de sigma-core
+│   │   │   └── error_handlers.py     # SigmaDomainError → HTTPException
 │   │   ├── tests/
-│   │   └── pyproject.toml
+│   │   └── pyproject.toml            # deps: fastapi, uvicorn, sigma-core
 │   │
-│   └── sigma-web/           # PWA React
+│   └── sigma-web/                    # PWA React + Vite
 │       ├── src/
-│       └── package.json
+│       │   ├── api/                  # Clientes HTTP por recurso
+│       │   ├── entities/             # Hooks React Query por entidad
+│       │   ├── views/                # Vistas principales
+│       │   └── shared/               # Componentes, tokens, store Zustand
+│       └── package.json              # React 19, React Query, Zustand, dnd-kit
 │
 ├── docs/
-│   ├── adr/                 # Architecture Decision Records
-│   └── ARCHITECTURE.md      # Este documento
+│   ├── adr/                          # Architecture Decision Records (ADR-001 a ADR-014)
+│   └── design/                       # Diseño de dominio, API, Firestore, UI
 │
-├── pyproject.toml           # Raíz uv workspace
+├── pyproject.toml                    # uv workspace: sigma-core, sigma-mcp, sigma-rest
 └── uv.lock
 ```
 
@@ -144,33 +178,40 @@ Las dependencias solo apuntan hacia el interior. El dominio no importa nada exte
 
 ```mermaid
 flowchart LR
-    subgraph sigma-mcp
+    subgraph sigma-mcp["sigma-mcp (v4 — futuro)"]
         MCP_TOOLS["Tools MCP"]
-        MCP_REPO["Adaptadores\nde salida"]
     end
 
-    subgraph sigma-rest
-        API["Routers\nFastAPI"]
-        REST_REPO["Adaptadores\nde salida\n(Firestore)"]
+    subgraph sigma-rest["sigma-rest (adaptador de entrada REST)"]
+        API["Routers FastAPI"]
+        DI["dependencies.py\n(DI factories)"]
     end
 
-    subgraph sigma-core
-        USE_CASES["Casos de uso"]
-        PORTS["Puertos\n(Protocols)"]
-        DOMAIN["Dominio\n(Entities, VOs,\nAggregates)"]
+    subgraph sigma-core["sigma-core (núcleo)"]
+        subgraph application["application/"]
+            USE_CASES["Casos de uso"]
+        end
+        subgraph domain["domain/"]
+            PORTS["Puertos\n(Protocols)"]
+            DOMAIN["Aggregates, VOs\nEntidades, Enums"]
+        end
+        subgraph infrastructure["infrastructure/firestore/"]
+            REPO["Repositorios\nFirestore"]
+        end
     end
 
-    MCP_TOOLS --> USE_CASES
-    MCP_REPO -.->|implementa| PORTS
+    DB[("Firestore")]
 
+    MCP_TOOLS -->|"usa (futuro)"| USE_CASES
     API --> USE_CASES
-    REST_REPO -.->|implementa| PORTS
-
+    DI -->|"provee repos"| REPO
     USE_CASES --> DOMAIN
     USE_CASES --> PORTS
+    REPO -.->|"implementa"| PORTS
+    REPO --> DB
 ```
 
-**Regla de dependencia:** `sigma-mcp` y `sigma-rest` dependen de `sigma-core`. `sigma-core` no conoce ni `sigma-mcp` ni `sigma-rest`.
+**Regla de dependencia:** `sigma-rest` y `sigma-mcp` dependen de `sigma-core`. `sigma-core` no conoce ni `sigma-rest` ni `sigma-mcp`. Los repositorios Firestore viven en `sigma-core/infrastructure/firestore/` y se inyectan en los casos de uso mediante `dependencies.py` desde el adaptador de entrada.
 
 ---
 
@@ -178,57 +219,87 @@ flowchart LR
 
 ### sigma-core
 
-Dominio puro. Sin frameworks, sin infraestructura.
+Núcleo del sistema. Contiene dominio puro, casos de uso **y** los adaptadores de salida (repositorios Firestore). Los repositorios residen aquí para evitar duplicación entre `sigma-rest` y `sigma-mcp`, que comparten el mismo backend.
+
+**domain/**
 
 | Módulo | Responsabilidad |
 |---|---|
-| `domain/` | Aggregates, entidades, Value Objects, enums, errores de dominio |
-| `domain/card_filter.py` | Motor de predicados reutilizable (visualización + WIP limits) |
-| `ports/` | Interfaces de repositorios como Python Protocols |
-| `use_cases/` | Coordinación de operaciones de dominio (Commands y Queries) |
-| `handlers.py` | Mapeo `SigmaDomainError → ErrorResult` — agnóstico al protocolo |
+| `aggregates/space.py` | Space como AR del workflow — estados, transiciones, WIP limits |
+| `aggregates/card.py` | Card como AR independiente — discriminated union pre-workflow/workflow |
+| `entities/area.py` | Entidad Area — clasificación PARA (responsabilidad continua) |
+| `entities/project.py` | Entidad Project — clasificación PARA (esfuerzo finito) |
+| `entities/epic.py` | Entidad Epic — contenedor de agrupación de Cards |
+| `ports/` | Interfaces (Python Protocols) de repositorios — `CardRepository`, `SpaceRepository`… |
+| `enums.py` | `PreWorkflowStage`, `Priority`, `ProjectStatus` |
+| `errors.py` | Jerarquía de 12 errores heredando de `SigmaDomainError` |
+| `value_objects.py` | `CardId`, `SpaceId`, `CardTitle`, `Url`, `ChecklistItem`, `Timestamp`… |
+| `card_filter.py` | Motor de predicados reutilizable (filtrado de tablero + WIP limits) |
 
-Los casos de uso reciben sus dependencias por **constructor injection**.
-`sigma-core` no conoce Pydantic, FastAPI ni MCP.
+**application/**
 
-**Dependencias:** stdlib únicamente.
+| Módulo | Responsabilidad |
+|---|---|
+| `use_cases/card/` | `CreateCard`, `UpdateCard`, `MoveCard`, `PromoteToWorkflow`, `DemoteToPreWorkflow`, `MoveTriageStage`, `ArchiveCard`, `DeleteCard`, `AssignArea/Project/Epic` |
+| `use_cases/area/` | `CreateArea`, `UpdateArea`, `DeleteArea` |
+| `use_cases/project/` | `CreateProject`, `UpdateProject`, `DeleteProject` |
+| `use_cases/epic/` | `CreateEpic`, `UpdateEpic`, `DeleteEpic`, `GetEpicsByArea` |
+| `use_cases/space/` | `CreateSpace`, `UpdateSpace` |
+| `error_handlers.py` | `SigmaDomainError → ErrorResult` — agnóstico al protocolo |
+
+Los casos de uso reciben sus dependencias por **constructor injection** (puertos, no implementaciones concretas).
+
+**infrastructure/firestore/**
+
+| Módulo | Responsabilidad |
+|---|---|
+| `config.py` | `FirestoreConfig` con `pydantic-settings` |
+| `client.py` | Factory del cliente `AsyncClient` de Firestore |
+| `mappers.py` | Serialización dominio ↔ dict Firestore para todos los agregados |
+| `card_repository.py` | `FirestoreCardRepository` — implementa `CardRepository` con fanout atómico |
+| `space_repository.py` | `FirestoreSpaceRepository` |
+| `area_repository.py` | `FirestoreAreaRepository` |
+| `project_repository.py` | `FirestoreProjectRepository` |
+| `epic_repository.py` | `FirestoreEpicRepository` |
+
+**Dependencias:** `firebase-admin`. El dominio puro no importa librerías externas.
 
 ### sigma-rest
 
-Adaptador REST + implementaciones de repositorios en Firestore.
+Adaptador de entrada REST. Solo responsable del contrato HTTP — no implementa repositorios.
 
 | Módulo | Responsabilidad |
 |---|---|
-| `api/` | Routers FastAPI, manejo de errores HTTP |
+| `main.py` | App FastAPI: CORS, exception handlers, montaje de routers con prefijo `/v1` |
+| `routers/` | `cards.py`, `spaces.py`, `areas.py`, `projects.py`, `epics.py` |
 | `schemas/` | Pydantic models para request/response — contratos REST |
 | `mappers/` | Conversión `Card → CardResponse`, `CreateCardRequest → CreateCardCommand` |
-| `adapters/` | Implementaciones de `CardRepository`, `SpaceRepository`, etc. sobre Firestore |
-| `config/` | `pydantic-settings` con prefijo `FIRESTORE_`, `APP_` |
+| `dependencies.py` | Factories de inyección de dependencias (`FastAPI Depends`) — instancia los repositorios de `sigma-core/infrastructure/firestore/` y los pasa a los casos de uso |
+| `error_handlers.py` | `ErrorResult → HTTPException` con body JSON estructurado |
 
-**Dependencias:** `fastapi`, `firebase-admin`, `pydantic-settings`, `sigma-core`.
+**Dependencias:** `fastapi`, `uvicorn`, `sigma-core`.
+
+> `dependencies.py` es el punto de ensamblaje: usa `lru_cache` para mantener un único cliente Firestore y expone factories para cada repositorio. Los routers solicitan las dependencias con `Depends()` y las pasan al constructor del caso de uso correspondiente.
 
 ### sigma-mcp
 
-Adaptador MCP para integración con Claude.
-
-| Módulo | Responsabilidad |
-|---|---|
-| `tools/` | Funciones decoradas con `@mcp.tool()` que envuelven casos de uso |
-| `schemas/` | Estructuras de datos para tools MCP |
-| `mappers/` | Conversión dominio ↔ protocolo MCP |
-| `adapters/` | Implementaciones de repositorios Firestore |
+Adaptador MCP para integración con Claude. **Planificado para v4.** El paquete existe como esqueleto.
 
 **Dependencias:** `mcp[cli]`, `sigma-core`.
 
 ### sigma-web
 
-PWA React. Independiente del workspace uv.
+PWA React + Vite. Independiente del workspace uv.
 
 | Módulo | Responsabilidad |
 |---|---|
-| `src/` | Componentes React, lógica de estado, llamadas REST |
+| `api/` | Clientes HTTP por recurso (axios/fetch) |
+| `entities/` | Hooks React Query (`useCards`, `useAreas`, `useEpics`…) |
+| `views/` | Vistas: `TriageView`, `SpaceView`, `AreaList`, `AreaDetail`, `ProjectDetail` |
+| `shared/components/` | Modales (`CreateCardModal`, `EditCardModal`…), sidebar `ParaSidebar`, tokens de diseño |
+| `shared/store/` | Estado global con Zustand (`useUIStore`) |
 
-**Dependencias:** React, Firebase SDK (Auth).
+**Dependencias:** React 19, React Router 7, `@tanstack/react-query`, Zustand, `@dnd-kit` (drag-and-drop), Vite.
 
 ---
 
@@ -328,7 +399,7 @@ Las decisiones significativas están documentadas como ADRs en `docs/adr/`.
 |---|---|---|
 | ADR-001 | Estructura del repositorio — mono-repo con uv workspaces | Aceptado |
 | ADR-002 | Stack de infraestructura — GCP free tier | Aceptado |
-| ADR-003 | Base de datos — Firestore | Superseded (pendiente revisión) |
+| ADR-003 | Base de datos — Firestore | Aceptado |
 | ADR-004 | Gestión de secretos — Secret Manager + pydantic-settings | Aceptado |
 | ADR-005 | Comunicación — FastMCP + FastAPI | Aceptado |
 | ADR-006 | Bounded Context único para v1 | Aceptado |
@@ -338,3 +409,5 @@ Las decisiones significativas están documentadas como ADRs en `docs/adr/`.
 | ADR-010 | WIP limit validado en capa de caso de uso | Aceptado |
 | ADR-011 | Area y Project como entidades PARA opcionales | Aceptado |
 | ADR-012 | Column es concepto de presentación, no entidad de dominio | Aceptado |
+| ADR-013 | Testing Strategy | Aceptado |
+| ADR-014 | Patrones de adaptador — DTOs, Mappers, Error Handling, DI | Aceptado |

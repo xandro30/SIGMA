@@ -29,16 +29,16 @@ sigma/
 ├── uv.lock
 │
 ├── packages/
-│   ├── sigma-core/                  ← dominio puro + puertos (Python)
-│   ├── sigma-mcp/                   ← adaptador MCP para Claude (Python)
-│   ├── sigma-rest/                  ← adaptador REST + Firestore (Python)
-│   └── sigma-web/                   ← PWA React (TypeScript)
+│   ├── sigma-core/                  ← núcleo: dominio + repositorios Firestore (Python)
+│   ├── sigma-mcp/                   ← adaptador MCP para Claude (Python) — v4, esqueleto
+│   ├── sigma-rest/                  ← adaptador REST (FastAPI) — consume sigma-core (Python)
+│   └── sigma-web/                   ← PWA React + Vite
 │
 └── docs/
     ├── adr/                         ← Architecture Decision Records
     │   ├── ADR-001_-_Estructura_del_repositorio.md
     │   ├── ADR-002_-_Stack_de_infraestructura_GCP.md
-    │   ├── ADR-003_-_Base_de_datos_Firestore.md     ← Superseded
+    │   ├── ADR-003_-_Base_de_datos_Firestore.md
     │   ├── ADR-004_-_Gestion_de_secretos.md
     │   ├── ADR-005_-_Comunicacion_entre_componentes.md
     │   ├── ADR-006_-_Bounded_Context.md
@@ -65,12 +65,13 @@ sigma/
 
 | Capa | Tecnología |
 |---|---|
-| Dominio | Python 3.13 — puro, sin frameworks |
-| API REST | FastAPI + pydantic-settings |
-| Servidor MCP | FastMCP (`mcp[cli]`) |
-| Base de datos | Firestore (GCP) |
-| Autenticación | Firebase Auth (Google OAuth) |
-| PWA | React + TypeScript |
+| Dominio | Python 3.13 — sin frameworks en la capa de negocio |
+| Repositorios | `firebase-admin` (Firestore async) — en `sigma-core/infrastructure/` |
+| API REST | FastAPI + Uvicorn |
+| Servidor MCP | FastMCP (`mcp[cli]`) — planificado v4 |
+| Base de datos | Firestore (GCP) — emulador Docker en desarrollo local |
+| Autenticación | Firebase Auth (Google OAuth) — pendiente integración |
+| PWA | React 19 + Vite + React Query + Zustand + dnd-kit |
 | Hosting | Firebase Hosting |
 | Compute | Cloud Run (containerizado) |
 | Secretos | Secret Manager |
@@ -132,11 +133,10 @@ npm install
 
 ### Configuración local
 
-Crea un fichero `.env` en cada package Python a partir de su `.env.example`:
+Crea un fichero `.env` en `sigma-rest` a partir de su `.env.example`:
 
 ```bash
 cp packages/sigma-rest/.env.example packages/sigma-rest/.env
-cp packages/sigma-mcp/.env.example packages/sigma-mcp/.env
 ```
 
 Variables mínimas necesarias:
@@ -145,28 +145,36 @@ Variables mínimas necesarias:
 # packages/sigma-rest/.env
 FIRESTORE_PROJECT_ID=<tu-gcp-project-id>
 FIRESTORE_DATABASE=(default)
-FIREBASE_AUTH_CREDENTIALS=<path-to-service-account.json>
-
-# packages/sigma-mcp/.env
-FIRESTORE_PROJECT_ID=<tu-gcp-project-id>
-FIRESTORE_DATABASE=(default)
+FIRESTORE_EMULATOR_HOST=localhost:8081   # solo en desarrollo local
 ```
+
+### Firestore en local
+
+Para desarrollo local se usa el emulador oficial de Firestore vía Docker:
+
+```bash
+# Arrancar emulador Firestore
+docker-compose up firestore
+
+# El emulador expone la UI en http://localhost:4000
+```
+
+La variable `FIRESTORE_EMULATOR_HOST` hace que `firebase-admin` apunte al emulador
+en lugar de a GCP real — sin necesidad de service account.
 
 ### Ejecutar en local
 
 ```bash
-# Dominio + API REST
+# API REST (incluye sigma-core con repositorios Firestore)
 cd packages/sigma-rest
 uv run uvicorn sigma_rest.main:app --reload --port 8000
-
-# Servidor MCP
-cd packages/sigma-mcp
-uv run mcp dev sigma_mcp/server.py
 
 # PWA
 cd packages/sigma-web
 npm run dev
 ```
+
+> `sigma-mcp` no está implementado todavía (planificado para v4).
 
 ---
 
@@ -204,29 +212,36 @@ uv run pytest
 | [`docs/design/COMMUNICATION-FLOWS.md`](./docs/design/COMMUNICATION-FLOWS.md) | Sequence diagrams de los casos de uso principales |
 | [`docs/design/ARCHITECTURE-DIAGRAM.md`](./docs/design/ARCHITECTURE-DIAGRAM.md) | Diagramas completos de arquitectura e infraestructura |
 | [`docs/design/API-REST-CATALOGUE.md`](./docs/design/API-REST-CATALOGUE.md) | Contratos de la API REST (endpoints, request/response) |
-| [`docs/design/MCP-TOOLS-CATALOGUE.md`](./docs/design/MCP-TOOLS-CATALOGUE.md) | Tools MCP expuestas a Claude |
+| [`docs/design/MCP-TOOLS-CATALOGUE.md`](./docs/design/MCP-TOOLS-CATALOGUE.md) | Tools MCP expuestas a Claude — diseño para v4 |
 | [`docs/adr/`](./docs/adr/) | Architecture Decision Records |
 
 ---
 
 ## Roadmap
 
-### v1 — TaskManagement (en curso)
+### v1 — TaskManagement
 
-- [x] Diseño de dominio (Aggregates, VOs, CardFilter)
-- [x] ADRs de infraestructura y dominio
-- [x] Diseño de API REST y MCP tools
-- [ ] Implementación de `sigma-core` (dominio + puertos)
-- [ ] Implementación de `sigma-rest` (FastAPI + Firestore)
-- [ ] Implementación de `sigma-mcp` (FastMCP)
-- [ ] Implementación de `sigma-web` (React PWA)
+- [x] Diseño de dominio (Aggregates, VOs, CardFilter, ADRs)
+- [x] `sigma-core` — dominio, casos de uso, repositorios Firestore
+- [x] `sigma-rest` — API REST completa (FastAPI)
+- [x] `sigma-web` — PWA React (tablero Triage, vistas PARA, drag-and-drop)
+- [ ] Autenticación Firebase Auth (pendiente integración)
+- [ ] Seed script con datos de ejemplo
+- [ ] Despliegue en Cloud Run + Firebase Hosting
 
-### v2 — Planning
+### v2 — Planning (Scheduling)
 
 - [ ] Bounded Context `Planning` (timeboxing, estimaciones, tracking)
 - [ ] Integración con Google Calendar
 - [ ] Offline support en PWA
 
+### v3 — Metrics
+
+- [ ] Bounded Context `Metrics` — análisis de productividad, velocidad, tendencias
+
+### v4 — MCP (Claude agent)
+
+- [ ] `sigma-mcp` — servidor FastMCP con tools que envuelven los casos de uso de sigma-core
 ---
 
 ## Licencia

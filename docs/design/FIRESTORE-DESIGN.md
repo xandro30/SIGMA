@@ -2,9 +2,10 @@
 
 ## SIGMA — Diseño de base de datos Firestore
 
-**Versión:** 1.0
+**Versión:** 1.1
 **Fecha:** 2026-03-21
-**Reemplaza:** ADR-003 (Superseded)
+**Última revisión:** 2026-04-09
+**Complementa:** ADR-003 (activo — Firestore sigue siendo la base de datos)
 
 ---
 
@@ -37,25 +38,29 @@ Firestore es una base de datos documental NoSQL. El modelo no se diseña desde l
 
 ### 2.1 `/spaces/{spaceId}`
 
-Contiene el workflow completo embebido — `WorkflowState` no tiene colección propia.
+Contiene el workflow completo embebido — `WorkflowState` y `Transition` no tienen colecciones propias.
 
 ```
 spaces/{spaceId}
   id:               string          # UUID v4
   name:             string
   workflow_states:  array<object>   # embebido — entidad interna de Space
-    - id:                 string    # WorkflowStateId
-      name:               string
-      order:              number
-      is_start:           boolean
-      is_end:             boolean
-      wip_limit_rules:    array<object>
-        - max_cards:      number
-          filter:         object | null   # CardFilter serializado
-      allowed_transitions: array<string>  # [] = todas permitidas
+    - id:           string          # WorkflowStateId (UUID v4)
+      name:         string
+      order:        number
+  transitions:      array<object>   # grafo de transiciones permitidas
+    - from_id:      string          # WorkflowStateId origen
+      to_id:        string          # WorkflowStateId destino
   created_at:       timestamp
   updated_at:       timestamp
 ```
+
+**Notas de implementación:**
+
+- `workflow_states` almacena solo `{id, name, order}`. Las reglas WIP limit y los filtros se evalúan en dominio, no se persisten por estado.
+- El estado inicial y el estado final se identifican mediante UUIDs reservados definidos en `sigma_core` (`BEGIN_ID`, `FINISH_ID`), no mediante flags `is_start` / `is_end`.
+- Las transiciones permitidas se almacenan como array plano en el documento Space, no embebidas en cada estado.
+- Las transiciones vacías (`[]`) significan que ninguna transición está definida — el dominio controla cómo interpreta eso.
 
 **Justificación del embedding:** `WorkflowState` es una entidad interna de `Space` sin identidad propia. Nunca se consulta de forma independiente. Embedding elimina lecturas adicionales en cada validación de transición.
 
@@ -100,7 +105,8 @@ areas/{areaId}
   id:           string
   name:         string
   description:  string | null
-  objectives:   array<string>
+  objectives:   string | null     # texto libre — no array
+  color_id:     string | null     # identificador del color del sistema (ej: "coral", "violeta")
   created_at:   timestamp
   updated_at:   timestamp
 ```
@@ -114,9 +120,9 @@ projects/{projectId}
   id:           string
   name:         string
   description:  string | null
-  objectives:   array<string>
-  area_id:      string        # referencia a /areas/{areaId} — obligatorio
-  status:       string        # "active" | "on_hold" | "completed"
+  objectives:   string | null  # texto libre — no array
+  area_id:      string         # referencia a /areas/{areaId} — obligatorio
+  status:       string         # "active" | "on_hold" | "completed"
   created_at:   timestamp
   updated_at:   timestamp
 ```
@@ -128,31 +134,37 @@ projects/{projectId}
 ```
 epics/{epicId}
   id:           string
-  space_id:     string        # referencia a /spaces/{spaceId}
+  space_id:     string   # referencia a /spaces/{spaceId}
+  project_id:   string   # referencia a /projects/{projectId} — obligatorio
+  area_id:      string   # referencia a /areas/{areaId} — obligatorio
   name:         string
   description:  string | null
   created_at:   timestamp
   updated_at:   timestamp
 ```
 
+`project_id` y `area_id` son obligatorios — un Epic siempre pertenece a un Project y a un Area. Estos campos permiten consultas de Epics por Área o por Proyecto sin pasar por el Space.
+
 ---
 
-### 2.6 `/card_indexes/{spaceId}/by_state/{stateKey}`
+### 2.6 `/card_indexes/{spaceId}/by_state/{stateKey}_{cardId}`
 
 Índice ligero para consultas de tablero — obtener Cards de una columna sin leer documentos completos.
 
-`stateKey` puede ser un `PreWorkflowStage` (`inbox`, `refinement`, `backlog`) o un `WorkflowStateId`.
+`stateKey` puede ser un `PreWorkflowStage` (`inbox`, `refinement`, `backlog`) o un `WorkflowStateId`. El ID del documento combina ambos: `{stateKey}_{cardId}`.
 
 ```
-card_indexes/{spaceId}/by_state/{stateKey}
+card_indexes/{spaceId}/by_state/{stateKey}_{cardId}
   card_id:       string
   title:         string
   priority:      string | null
-  due_date:      string | null
+  due_date:      string | null   # ISO 8601 date "yyyy-MM-dd"
   labels:        array<string>
   epic_id:       string | null
   updated_at:    timestamp
 ```
+
+**Nota de implementación:** el documento de índice NO es una subcolección por `stateKey`. Es un documento plano dentro de la subcolección `by_state`, con ID compuesto `{stateKey}_{cardId}`. Para obtener todos los índices de una columna se consulta `by_state` filtrando por prefijo de `card_id` o iterando — en la implementación actual se itera la subcolección completa y se filtra por `stateKey` en el ID del documento.
 
 **Se mantiene por fanout en cada `MoveCard`, `CreateCard`, `ArchiveCard`.**
 
@@ -165,22 +177,27 @@ card_indexes/{spaceId}/by_state/{stateKey}
 Transacción atómica de 2 escrituras:
 
 ```
-1. SET /cards/{cardId}                          ← documento completo
-2. SET /card_indexes/{spaceId}/by_state/inbox/{cardId}   ← índice ligero
+1. SET /cards/{cardId}
+       ← documento completo
+
+2. SET /card_indexes/{spaceId}/by_state/inbox_{cardId}
+       ← índice ligero (estado inicial siempre es "inbox")
 ```
 
 ### 3.2 MoveCard (MoveWithinWorkflow / PromoteToWorkflow / DemoteToPreWorkflow)
 
-Transacción atómica de 3 escrituras:
+Transacción atómica de hasta 3 escrituras (implementado en `save_with_index`):
 
 ```
-1. UPDATE /cards/{cardId}
-     pre_workflow_stage: <nuevo valor o null>
-     workflow_state_id:  <nuevo valor o null>
-     updated_at:         <now>
+1. SET    /cards/{cardId}
+            pre_workflow_stage: <nuevo valor o null>
+            workflow_state_id:  <nuevo valor o null>
+            updated_at:         <now>
 
-2. SET    /card_indexes/{spaceId}/by_state/{newStateKey}/{cardId}   ← nuevo índice
-3. DELETE /card_indexes/{spaceId}/by_state/{oldStateKey}/{cardId}   ← índice antiguo
+2. SET    /card_indexes/{spaceId}/by_state/{newStateKey}_{cardId}   ← nuevo índice
+
+3. DELETE /card_indexes/{spaceId}/by_state/{oldStateKey}_{cardId}   ← índice antiguo
+          (solo si oldStateKey != newStateKey)
 ```
 
 ### 3.3 ArchiveCard
