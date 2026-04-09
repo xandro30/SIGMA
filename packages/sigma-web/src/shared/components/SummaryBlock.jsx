@@ -55,8 +55,7 @@ export default function SummaryBlock({ type = 'project', data, epics = [], areaI
   // Progreso global (seeded, no cambia entre renders)
   const globalPct = seededRandom(data.id + 'global');
 
-  // Progreso por objetivo (seeded por objetivo + id)
-  const objectives = data?.objectives ?? [];
+  const objectives = typeof data?.objectives === 'string' ? data.objectives : null;
 
   return (
     <div style={{
@@ -105,15 +104,10 @@ export default function SummaryBlock({ type = 'project', data, epics = [], areaI
         </div>
 
         {/* ── Objetivos (solo en projects) ── */}
-        {type === 'project' && objectives.length > 0 && (
+        {type === 'project' && objectives && (
           <div>
-            <p style={{ margin: '0 0 10px', fontSize: '10px', color: '#FFFFFF', fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Objetivos</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {objectives.map((obj, i) => {
-                const pct = seededRandom(data.id + obj + i);
-                return <ProgressBar key={i} pct={pct} colorHex={accentHex} label={obj} />;
-              })}
-            </div>
+            <p style={{ margin: '0 0 8px', fontSize: '10px', color: '#FFFFFF', fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Objetivos</p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#FFFFFF', fontFamily: font.sans, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{objectives}</p>
           </div>
         )}
 

@@ -36,7 +36,9 @@ function TriageCard({ card, areas, isSelected, onSelect, onEdit, onPromote, isDr
         borderRadius: '9px',
         cursor:       isDragOverlay ? 'grabbing' : 'grab',
         background:   isSelected ? color.s3 : color.s2,
-        border:       `1px solid ${isSelected ? color.yellow : color.border}`,
+        borderTop:    `1px solid ${isSelected ? color.yellow : color.border}`,
+        borderRight:  `1px solid ${isSelected ? color.yellow : color.border}`,
+        borderBottom: `1px solid ${isSelected ? color.yellow : color.border}`,
         borderLeft:   `4px solid ${pr.color}`,
         // Entrance animation — constant delay prevents re-trigger on reorder
         opacity:      isDragOverlay ? 1 : 0,

@@ -14,29 +14,37 @@ function parseActivePath(pathname) {
   return { activeAreaId: ai >= 0 ? p[ai+1] : null, activeProjectId: pi >= 0 ? p[pi+1] : null, activeEpicId: ei >= 0 ? p[ei+1] : null };
 }
 
-function EpicList({ projectId, projectHref, activeEpicId }) {
+function EpicList({ projectId, projectHref, activeEpicId, areaHex }) {
   const nav = useNavigate();
   const activeSpaceId = useUIStore(s => s.activeSpaceId);
   const { data: epics = [] } = useEpicsBySpace(activeSpaceId);
   const list = epics.filter(e => e.project_id === projectId);
-  if (!list.length) return <p style={{ padding: '4px 0 4px 32px', fontSize: '12px', color: '#888', fontFamily: font.sans }}>sin épicas</p>;
-  return list.map(e => {
-    const active = e.id === activeEpicId;
-    return (
-      <button key={e.id} onClick={() => nav(`${projectHref}/epics/${e.id}`)} style={{
-        width: '100%', background: active ? color.yellow : 'transparent',
-        border: 'none', borderRadius: '5px',
-        padding: '6px 8px 6px 32px', textAlign: 'left',
-        display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px',
-      }}>
-        <span style={{ fontSize: '11px', color: active ? '#000' : '#888' }}>◇</span>
-        <span style={{ fontSize: '13px', color: active ? '#000' : W, fontFamily: font.sans, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
-      </button>
-    );
-  });
+  if (!list.length) return (
+    <p style={{ padding: '4px 0 4px 36px', fontSize: '12px', color: '#888', fontFamily: font.sans }}>sin épicas</p>
+  );
+  return (
+    <div style={{ paddingLeft: '20px' }}>
+      {list.map(e => {
+        const active = e.id === activeEpicId;
+        return (
+          <button key={e.id} onClick={() => nav(`${projectHref}/epics/${e.id}`)} style={{
+            width: '100%',
+            background: active ? areaHex : 'transparent',
+            border: 'none', borderRadius: '5px',
+            padding: '6px 8px 6px 12px', textAlign: 'left',
+            display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px',
+            cursor: 'pointer',
+          }}>
+            <span style={{ fontSize: '11px', color: active ? '#000' : '#888', flexShrink: 0 }}>◇</span>
+            <span style={{ fontSize: '13px', color: active ? '#000' : W, fontFamily: font.sans, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
-function ProjectList({ areaId, areaHref, activeProjectId, activeEpicId }) {
+function ProjectList({ areaId, areaHref, activeProjectId, activeEpicId, areaHex }) {
   const nav = useNavigate();
   const { data: projects = [], isLoading } = useProjects(areaId);
   const [exp, setExp] = useState({ [activeProjectId]: true });
@@ -50,20 +58,20 @@ function ProjectList({ areaId, areaHref, activeProjectId, activeEpicId }) {
     return (
       <div key={p.id}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button onClick={() => setExp(s => ({ ...s, [p.id]: !s[p.id] }))} style={{ padding: '5px 4px 5px 12px', color: '#888', background: 'none', border: 'none', fontSize: '11px', flexShrink: 0 }}>
+          <button onClick={() => setExp(s => ({ ...s, [p.id]: !s[p.id] }))} style={{ padding: '5px 4px 5px 12px', color: '#888', background: 'none', border: 'none', fontSize: '11px', flexShrink: 0, cursor: 'pointer' }}>
             {open ? '▾' : '▸'}
           </button>
           <button onClick={() => nav(href)} style={{
-            flex: 1, background: active ? color.yellow : 'transparent',
+            flex: 1, background: active ? areaHex : 'transparent',
             border: 'none', borderRadius: '5px',
             padding: '6px 8px 6px 4px', textAlign: 'left',
-            display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0,
+            display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0, cursor: 'pointer',
           }}>
             <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: active ? '#000' : (STATUS_DOT[p.status] ?? '#888'), flexShrink: 0 }} />
             <span style={{ fontSize: '13px', color: active ? '#000' : W, fontFamily: font.sans, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
           </button>
         </div>
-        {open && <EpicList projectId={p.id} projectHref={href} activeEpicId={activeEpicId} />}
+        {open && <EpicList projectId={p.id} projectHref={href} activeEpicId={activeEpicId} areaHex={areaHex} />}
       </div>
     );
   });
@@ -87,20 +95,20 @@ export default function ParaSidebar() {
         return (
           <div key={a.id}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <button onClick={() => setExp(s => ({ ...s, [a.id]: !s[a.id] }))} style={{ padding: '5px 4px', color: '#888', background: 'none', border: 'none', fontSize: '11px', flexShrink: 0 }}>
+              <button onClick={() => setExp(s => ({ ...s, [a.id]: !s[a.id] }))} style={{ padding: '5px 4px', color: '#888', background: 'none', border: 'none', fontSize: '11px', flexShrink: 0, cursor: 'pointer' }}>
                 {open ? '▾' : '▸'}
               </button>
               <button onClick={() => { nav(href); setExp(s => ({ ...s, [a.id]: true })); }} style={{
                 flex: 1, background: active ? hex : 'transparent',
                 border: 'none', borderRadius: '6px',
                 padding: '7px 8px 7px 6px', textAlign: 'left',
-                display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0,
+                display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, cursor: 'pointer',
               }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: active ? '#000' : hex, flexShrink: 0 }} />
                 <span style={{ fontSize: '14px', color: active ? '#000' : W, fontFamily: font.sans, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
               </button>
             </div>
-            {open && <ProjectList areaId={a.id} areaHref={href} activeProjectId={activeProjectId} activeEpicId={activeEpicId} />}
+            {open && <ProjectList areaId={a.id} areaHref={href} activeProjectId={activeProjectId} activeEpicId={activeEpicId} areaHex={hex} />}
           </div>
         );
       })}

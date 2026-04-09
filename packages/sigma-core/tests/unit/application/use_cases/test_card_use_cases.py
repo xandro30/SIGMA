@@ -6,11 +6,14 @@ from sigma_core.task_management.domain.aggregates.space import (
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
 from sigma_core.task_management.domain.errors import (
     CardNotFoundError, SpaceNotFoundError,
-    InvalidTransitionError,
+    InvalidTransitionError, AreaNotFoundError, EpicNotFoundError, InvalidEpicSpaceError,
 )
 from sigma_core.task_management.domain.value_objects import (
     CardId, SpaceId, SpaceName, CardTitle, WorkflowStateId,
+    AreaId, EpicId, ProjectId,
 )
+from sigma_core.task_management.domain.entities.area import Area
+from sigma_core.task_management.domain.entities.epic import Epic
 from sigma_core.task_management.application.use_cases.card.create_card import (
     CreateCard, CreateCardCommand,
 )
@@ -24,7 +27,7 @@ from sigma_core.task_management.application.use_cases.card.demote_to_pre_workflo
     DemoteToPreWorkflow, DemoteToPreWorkflowCommand,
 )
 from sigma_core.task_management.application.use_cases.card.update_card import (
-    UpdateCard, UpdateCardCommand,
+    UpdateCard, UpdateCardCommand, UNSET,
 )
 from sigma_core.task_management.application.use_cases.card.archive_card import (
     ArchiveCard, ArchiveCardCommand,
@@ -34,6 +37,8 @@ from sigma_core.task_management.application.use_cases.card.delete_card import (
 )
 from tests.fakes.fake_card_repository import FakeCardRepository
 from tests.fakes.fake_space_repository import FakeSpaceRepository
+from tests.fakes.fake_area_repository import FakeAreaRepository
+from tests.fakes.fake_epic_repository import FakeEpicRepository
 from sigma_core.task_management.application.use_cases.card.move_triage_stage import (
     MoveTriageStage, MoveTriageStageCommand,
 )
@@ -244,7 +249,7 @@ async def test_demote_card_to_backlog_by_default(card_in_backlog):
 async def test_update_card_title(card_in_workflow):
     card_repo = FakeCardRepository()
     await card_repo.save(card_in_workflow)
-    use_case = UpdateCard(card_repo)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
 
     await use_case.execute(UpdateCardCommand(
         card_id=card_in_workflow.id,
@@ -259,7 +264,7 @@ async def test_update_card_title(card_in_workflow):
 async def test_update_card_priority(card_in_workflow):
     card_repo = FakeCardRepository()
     await card_repo.save(card_in_workflow)
-    use_case = UpdateCard(card_repo)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
 
     await use_case.execute(UpdateCardCommand(
         card_id=card_in_workflow.id,
@@ -273,10 +278,189 @@ async def test_update_card_priority(card_in_workflow):
 @pytest.mark.asyncio
 async def test_update_card_raises_error_if_not_found():
     card_repo = FakeCardRepository()
-    use_case = UpdateCard(card_repo)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
 
     with pytest.raises(CardNotFoundError):
         await use_case.execute(UpdateCardCommand(card_id=CardId.generate()))
+
+
+@pytest.mark.asyncio
+async def test_update_card_assigns_area(card_in_workflow):
+    card_repo = FakeCardRepository()
+    area_repo = FakeAreaRepository()
+    area = Area(id=AreaId.generate(), name="Backend")
+    await area_repo.save(area)
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, area_repo, FakeEpicRepository())
+
+    await use_case.execute(UpdateCardCommand(
+        card_id=card_in_workflow.id,
+        area_id=area.id,
+    ))
+
+    updated = await card_repo.get_by_id(card_in_workflow.id)
+    assert updated.area_id == area.id
+
+
+@pytest.mark.asyncio
+async def test_update_card_clears_area_when_area_id_is_none(card_in_workflow):
+    card_repo = FakeCardRepository()
+    area_repo = FakeAreaRepository()
+    area = Area(id=AreaId.generate(), name="Backend")
+    await area_repo.save(area)
+    card_in_workflow.area_id = area.id
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, area_repo, FakeEpicRepository())
+
+    await use_case.execute(UpdateCardCommand(
+        card_id=card_in_workflow.id,
+        area_id=None,  # explícito: limpiar
+    ))
+
+    updated = await card_repo.get_by_id(card_in_workflow.id)
+    assert updated.area_id is None
+
+
+@pytest.mark.asyncio
+async def test_update_card_area_id_unset_does_not_touch_existing_area(card_in_workflow):
+    card_repo = FakeCardRepository()
+    area_repo = FakeAreaRepository()
+    area = Area(id=AreaId.generate(), name="Backend")
+    await area_repo.save(area)
+    card_in_workflow.area_id = area.id
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, area_repo, FakeEpicRepository())
+
+    await use_case.execute(UpdateCardCommand(
+        card_id=card_in_workflow.id,
+        title=CardTitle("Solo actualizo título"),
+        # area_id UNSET → no tocar
+    ))
+
+    updated = await card_repo.get_by_id(card_in_workflow.id)
+    assert updated.area_id == area.id
+
+
+@pytest.mark.asyncio
+async def test_update_card_raises_error_if_area_not_found(card_in_workflow):
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
+
+    with pytest.raises(AreaNotFoundError):
+        await use_case.execute(UpdateCardCommand(
+            card_id=card_in_workflow.id,
+            area_id=AreaId.generate(),  # no existe en repo
+        ))
+
+
+@pytest.mark.asyncio
+async def test_update_card_assigns_epic(card_in_workflow):
+    card_repo = FakeCardRepository()
+    epic_repo = FakeEpicRepository()
+    epic = Epic(
+        id=EpicId.generate(),
+        space_id=card_in_workflow.space_id,  # mismo space
+        area_id=AreaId.generate(),
+        project_id=ProjectId.generate(),
+        name="Epic A",
+    )
+    await epic_repo.save(epic)
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), epic_repo)
+
+    await use_case.execute(UpdateCardCommand(
+        card_id=card_in_workflow.id,
+        epic_id=epic.id,
+    ))
+
+    updated = await card_repo.get_by_id(card_in_workflow.id)
+    assert updated.epic_id == epic.id
+
+
+@pytest.mark.asyncio
+async def test_update_card_raises_error_if_epic_not_found(card_in_workflow):
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
+
+    with pytest.raises(EpicNotFoundError):
+        await use_case.execute(UpdateCardCommand(
+            card_id=card_in_workflow.id,
+            epic_id=EpicId.generate(),
+        ))
+
+
+@pytest.mark.asyncio
+async def test_update_card_raises_error_if_epic_belongs_to_different_space(card_in_workflow):
+    card_repo = FakeCardRepository()
+    epic_repo = FakeEpicRepository()
+    other_space_id = SpaceId.generate()
+    epic = Epic(
+        id=EpicId.generate(),
+        space_id=other_space_id,  # space distinto
+        area_id=AreaId.generate(),
+        project_id=ProjectId.generate(),
+        name="Epic de otro space",
+    )
+    await epic_repo.save(epic)
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), epic_repo)
+
+    with pytest.raises(InvalidEpicSpaceError):
+        await use_case.execute(UpdateCardCommand(
+            card_id=card_in_workflow.id,
+            epic_id=epic.id,
+        ))
+
+
+@pytest.mark.asyncio
+async def test_update_card_replaces_labels(card_in_workflow):
+    card_in_workflow.labels = {"bug", "backend"}
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
+
+    await use_case.execute(UpdateCardCommand(
+        card_id=card_in_workflow.id,
+        labels={"urgente", "frontend"},
+    ))
+
+    updated = await card_repo.get_by_id(card_in_workflow.id)
+    assert updated.labels == {"urgente", "frontend"}
+
+
+@pytest.mark.asyncio
+async def test_update_card_clears_labels_when_empty_set(card_in_workflow):
+    card_in_workflow.labels = {"bug", "backend"}
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
+
+    await use_case.execute(UpdateCardCommand(
+        card_id=card_in_workflow.id,
+        labels=set(),
+    ))
+
+    updated = await card_repo.get_by_id(card_in_workflow.id)
+    assert updated.labels == set()
+
+
+@pytest.mark.asyncio
+async def test_update_card_labels_none_does_not_touch_existing_labels(card_in_workflow):
+    card_in_workflow.labels = {"bug", "backend"}
+    card_repo = FakeCardRepository()
+    await card_repo.save(card_in_workflow)
+    use_case = UpdateCard(card_repo, FakeAreaRepository(), FakeEpicRepository())
+
+    await use_case.execute(UpdateCardCommand(
+        card_id=card_in_workflow.id,
+        title=CardTitle("Solo título"),
+        # labels=None (UNSET) → no tocar
+    ))
+
+    updated = await card_repo.get_by_id(card_in_workflow.id)
+    assert updated.labels == {"bug", "backend"}
 
 
 # ── ArchiveCard / DeleteCard ──────────────────────────────────────

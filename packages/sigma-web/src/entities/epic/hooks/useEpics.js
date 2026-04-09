@@ -3,6 +3,9 @@ import { epicsApi } from "../../../api/epics";
 export function useEpicsBySpace(spaceId) {
   return useQuery({ queryKey:["epics","space",spaceId], queryFn:()=>epicsApi.getBySpace(spaceId), enabled:!!spaceId });
 }
+export function useEpicsByArea(areaId) {
+  return useQuery({ queryKey:["epics","area",areaId], queryFn:()=>epicsApi.getByArea(areaId), enabled:!!areaId });
+}
 export function useEpic(id) {
   return useQuery({ queryKey:["epic",id], queryFn:()=>epicsApi.getById(id), enabled:!!id });
 }

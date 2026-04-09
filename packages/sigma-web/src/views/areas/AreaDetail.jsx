@@ -35,25 +35,10 @@ function TabOverview({ area, projects, onEditArea, onEditProject, navigate, area
           <button onClick={onEditArea} style={{ background: 'none', border: `1px solid ${color.border2}`, borderRadius: '7px', color: '#FFFFFF', cursor: 'pointer', padding: '6px 12px', fontSize: '12px', fontFamily: font.mono, fontWeight: 700, flexShrink: 0, marginLeft: '12px' }}>✏ Editar</button>
         </div>
 
-        {area.objectives?.length > 0 && (
-          <div>
-            <p style={{ margin: '0 0 10px', fontSize: '10px', color: '#FFFFFF', fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Objetivos del área</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {area.objectives.map((obj, i) => {
-                const pct = seededRandom(area.id + obj + i);
-                return (
-                  <div key={i}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: '#FFFFFF', fontFamily: font.sans, fontWeight: 700 }}>▸ {obj}</span>
-                      <span style={{ fontSize: '12px', color: hex, fontFamily: font.mono, fontWeight: 800 }}>{pct}%</span>
-                    </div>
-                    <div style={{ height: '5px', background: color.border2, borderRadius: '3px' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: hex, borderRadius: '3px' }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        {area.objectives && (
+          <div style={{ marginTop: '12px' }}>
+            <p style={{ margin: '0 0 8px', fontSize: '10px', color: '#FFFFFF', fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Objetivos del área</p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#FFFFFF', fontFamily: font.sans, lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{area.objectives}</p>
           </div>
         )}
       </div>

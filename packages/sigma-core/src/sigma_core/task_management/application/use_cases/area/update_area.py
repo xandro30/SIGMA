@@ -9,6 +9,8 @@ class UpdateAreaCommand:
     area_id: AreaId
     name: str | None = None
     description: str | None = None
+    objectives: str | None = None
+    color_id: str | None = None
 
 
 class UpdateArea:
@@ -24,5 +26,9 @@ class UpdateArea:
             area.rename(cmd.name)
         if cmd.description is not None:
             area.update_description(cmd.description)
+        if cmd.objectives is not None:
+            area.update_objectives(cmd.objectives)
+        if cmd.color_id is not None:
+            area.update_color(cmd.color_id)
 
         await self._area_repo.save(area)

@@ -5,13 +5,13 @@ from sigma_core.task_management.domain.value_objects import (
     CardId, SpaceId, CardTitle, WorkflowStateId,
     AreaId, ProjectId, EpicId, Url, ChecklistItem,
 )
-from sigma_core.task_management.domain.enums import PreWorkflowStage
+from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
 from sigma_core.task_management.application.use_cases.card.create_card import CreateCard, CreateCardCommand
 from sigma_core.task_management.application.use_cases.card.move_card import MoveCard, MoveCardCommand
 from sigma_core.task_management.application.use_cases.card.promote_to_workflow import PromoteToWorkflow, PromoteToWorkflowCommand
 from sigma_core.task_management.application.use_cases.card.demote_to_pre_workflow import DemoteToPreWorkflow, DemoteToPreWorkflowCommand
 from sigma_core.task_management.application.use_cases.card.move_triage_stage import MoveTriageStage, MoveTriageStageCommand  # ← NUEVO
-from sigma_core.task_management.application.use_cases.card.update_card import UpdateCard, UpdateCardCommand
+from sigma_core.task_management.application.use_cases.card.update_card import UpdateCard, UpdateCardCommand, UNSET
 from sigma_core.task_management.application.use_cases.card.archive_card import ArchiveCard, ArchiveCardCommand
 from sigma_core.task_management.application.use_cases.card.delete_card import DeleteCard, DeleteCardCommand
 from sigma_core.task_management.application.use_cases.card.assign_area import AssignArea, AssignAreaCommand
@@ -54,6 +54,11 @@ async def create_card(
         space_id=SpaceId(space_id),
         title=CardTitle(body.title),
         initial_stage=initial_stage,
+        area_id=AreaId(body.area_id) if body.area_id else None,
+        project_id=ProjectId(body.project_id) if body.project_id else None,
+        epic_id=EpicId(body.epic_id) if body.epic_id else None,
+        priority=Priority(body.priority) if body.priority else None,
+        labels=set(body.labels) if body.labels else set(),
     ))
     card = await card_repo.get_by_id(card_id)
     return card_to_response(card)
@@ -70,13 +75,20 @@ async def update_card(
     card_id: str,
     body: UpdateCardRequest,
     card_repo=Depends(get_card_repo),
+    area_repo=Depends(get_area_repo),
+    epic_repo=Depends(get_epic_repo),
 ):
-    use_case = UpdateCard(card_repo)
+    sent = body.model_fields_set
+    use_case = UpdateCard(card_repo, area_repo, epic_repo)
     await use_case.execute(UpdateCardCommand(
         card_id=CardId(card_id),
         title=CardTitle(body.title) if body.title else None,
         description=body.description,
+        priority=Priority(body.priority) if body.priority else None,
         due_date=date.fromisoformat(body.due_date) if body.due_date else None,
+        area_id=AreaId(body.area_id) if body.area_id else None if "area_id" in sent else UNSET,
+        epic_id=EpicId(body.epic_id) if body.epic_id else None if "epic_id" in sent else UNSET,
+        labels=set(body.labels) if "labels" in sent and body.labels is not None else None,
     ))
     card = await card_repo.get_by_id(CardId(card_id))
     return card_to_response(card)

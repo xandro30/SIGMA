@@ -24,7 +24,7 @@ def test_project_is_created_correctly():
     assert project.area_id == area_id
     assert project.status == ProjectStatus.ACTIVE
     assert project.description is None
-    assert project.objectives == []
+    assert project.objectives is None
 
 
 def test_project_empty_name_raises_value_error():
@@ -48,9 +48,9 @@ def test_project_change_status_updates_status():
     assert project.status == ProjectStatus.COMPLETED
 
 
-def test_project_add_objective_adds_to_list():
+def test_project_update_objectives_sets_text():
     project = Project(id=ProjectId.generate(), name="N3 SecOps", area_id=AreaId.generate(), status=ProjectStatus.ACTIVE)
 
-    project.add_objective("YARA-L migration")
+    project.update_objectives("YARA-L migration Q2")
 
-    assert "YARA-L migration" in project.objectives
+    assert project.objectives == "YARA-L migration Q2"

@@ -57,13 +57,10 @@ function AreaCard({ area, allCards, onClick, onEye }) {
         ))}
       </div>
 
-      {area.objectives?.length > 0 && (
-        <div onClick={onClick} style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', cursor: 'pointer' }}>
-          {area.objectives.slice(0, 2).map((o, i) => (
-            <span key={i} style={{ fontSize: '11px', color: color.muted, background: color.s2, border: `1px solid ${color.border2}`, borderRadius: '4px', padding: '3px 8px', fontFamily: font.sans }}>· {o}</span>
-          ))}
-          {area.objectives.length > 2 && <span style={{ fontSize: '11px', color: color.muted, fontFamily: font.sans }}>+{area.objectives.length - 2} más</span>}
-        </div>
+      {area.objectives && (
+        <p onClick={onClick} style={{ margin: 0, fontSize: '11px', color: color.muted, fontFamily: font.sans, lineHeight: '1.5', cursor: 'pointer', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {area.objectives}
+        </p>
       )}
     </div>
   );

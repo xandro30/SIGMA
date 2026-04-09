@@ -36,6 +36,12 @@ async def create_epic(
     return epic_to_response(epic)
 
 
+@router.get("/epics/{epic_id}")
+async def get_epic(epic_id: str, epic_repo=Depends(get_epic_repo)):
+    epic = await epic_repo.get_by_id(EpicId(epic_id))
+    return epic_to_response(epic)
+
+
 @router.patch("/epics/{epic_id}")
 async def update_epic(
     epic_id: str,

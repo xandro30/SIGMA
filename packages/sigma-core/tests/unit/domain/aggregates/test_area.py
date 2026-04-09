@@ -11,7 +11,7 @@ def test_area_is_created_correctly():
     assert area.id == area_id
     assert area.name == "Work"
     assert area.description is None
-    assert area.objectives == []
+    assert area.objectives is None
 
 
 def test_area_empty_name_raises_value_error():
@@ -32,7 +32,7 @@ def test_area_rename_updates_name():
     assert area.name == "Sngular"
 
 
-def test_area_add_objective_adds_to_list():
+def test_area_update_objectives_sets_text():
     area = Area(
         id=AreaId.generate(),
         name="Work",
@@ -40,20 +40,20 @@ def test_area_add_objective_adds_to_list():
         updated_at=Timestamp.now(),
     )
 
-    area.add_objective("PSOE cert Q2")
+    area.update_objectives("GCP cert Q2")
 
-    assert "PSOE cert Q2" in area.objectives
+    assert area.objectives == "GCP cert Q2"
 
 
-def test_area_remove_objective_removes_from_list():
+def test_area_update_objectives_clears_with_none():
     area = Area(
         id=AreaId.generate(),
         name="Work",
+        objectives="GCP cert Q2",
         created_at=Timestamp.now(),
         updated_at=Timestamp.now(),
     )
-    area.add_objective("PSOE cert Q2")
 
-    area.remove_objective("PSOE cert Q2")
+    area.update_objectives(None)
 
-    assert "PSOE cert Q2" not in area.objectives
+    assert area.objectives is None

@@ -8,6 +8,7 @@ def area_to_response(area: Area) -> AreaResponse:
         name=area.name,
         description=area.description,
         objectives=area.objectives,
+        color_id=area.color_id,
         created_at=area.created_at.value.isoformat(),
         updated_at=area.updated_at.value.isoformat(),
     )

@@ -19,6 +19,10 @@ class UpdateCardRequest(BaseModel):
     description: str | None = None
     priority: str | None = None
     due_date: str | None = None
+    # None = no enviado (no tocar); str vacío o ausencia → limpiar con null explícito
+    area_id: str | None = None
+    epic_id: str | None = None
+    labels: list[str] | None = None
 
 
 class MoveCardRequest(BaseModel):

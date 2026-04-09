@@ -12,7 +12,7 @@ class Project:
     area_id: AreaId
     status: ProjectStatus
     description: str | None = None
-    objectives: list[str] = field(default_factory=list)
+    objectives: str | None = None
     created_at: Timestamp = field(default_factory=Timestamp.now)
     updated_at: Timestamp = field(default_factory=Timestamp.now)
 
@@ -31,13 +31,8 @@ class Project:
         self.description = description
         self.updated_at = Timestamp.now()
 
-    def add_objective(self, objective: str) -> None:
-        if objective not in self.objectives:
-            self.objectives.append(objective)
-            self.updated_at = Timestamp.now()
-
-    def remove_objective(self, objective: str) -> None:
-        self.objectives = [o for o in self.objectives if o != objective]
+    def update_objectives(self, objectives: str | None) -> None:
+        self.objectives = objectives
         self.updated_at = Timestamp.now()
 
     def change_status(self, status: ProjectStatus) -> None:

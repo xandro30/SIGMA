@@ -10,6 +10,7 @@ class UpdateProjectCommand:
     project_id: ProjectId
     name: str | None = None
     description: str | None = None
+    objectives: str | None = None
     status: ProjectStatus | None = None
 
 
@@ -26,6 +27,8 @@ class UpdateProject:
             project.rename(cmd.name)
         if cmd.description is not None:
             project.update_description(cmd.description)
+        if cmd.objectives is not None:
+            project.update_objectives(cmd.objectives)
         if cmd.status is not None:
             project.change_status(cmd.status)
 

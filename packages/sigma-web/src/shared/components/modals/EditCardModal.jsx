@@ -3,7 +3,8 @@ import { color, font, priority as pt, getAreaHex } from '../../tokens';
 import { useUIStore } from '../../store/useUIStore';
 import { useSpaces } from '../../../entities/space/hooks/useSpaces';
 import { useAreas } from '../../../entities/area/hooks/useAreas';
-import { useEpicsBySpace } from '../../../entities/epic/hooks/useEpics';
+import { useProjects } from '../../../entities/project/hooks/useProjects';
+import { useEpicsByArea } from '../../../entities/epic/hooks/useEpics';
 import { useUpdateCard, useMoveCard, usePromoteCard, useDemoteCard } from '../../../entities/card/hooks/useCards';
 
 const TRIAGE_STAGES = [
@@ -39,9 +40,8 @@ function Field({ label, children }) {
 
 export default function EditCardModal({ card, onClose }) {
   const activeSpaceId = useUIStore(s => s.activeSpaceId);
-  const { data: spaces = [] } = useSpaces();
-  const { data: areas  = [] } = useAreas();
-  const { data: epics  = [] } = useEpicsBySpace(activeSpaceId);
+  const { data: spaces   = [] } = useSpaces();
+  const { data: areas    = [] } = useAreas();
 
   const { mutate: updateCard, isPending: saving } = useUpdateCard(activeSpaceId);
   const { mutate: moveCard    } = useMoveCard(activeSpaceId);
@@ -59,10 +59,15 @@ export default function EditCardModal({ card, onClose }) {
   const [epicId,      setEpicId]      = useState(card.epic_id ?? '');
   const [labelsRaw,   setLabelsRaw]   = useState((card.labels ?? []).join(', '));
 
-  const filteredEpics = areaId ? epics.filter(e => {
-    // Intentamos filtrar por área si los epics tienen area_id, si no los mostramos todos
-    return true;
-  }) : epics;
+  const { data: epics    = [] } = useEpicsByArea(areaId);
+  const { data: projects = [] } = useProjects(areaId);
+
+  // Agrupar épicas por proyecto para el <optgroup>
+  const epicsByProject = projects
+    .map(p => ({ project: p, epics: epics.filter(e => e.project_id === p.id) }))
+    .filter(g => g.epics.length > 0);
+  const projectIds   = new Set(projects.map(p => p.id));
+  const orphanEpics  = epics.filter(e => !projectIds.has(e.project_id));
 
   // Estado actual de la card
   const isInTriage   = !!card.pre_workflow_stage;
@@ -173,9 +178,19 @@ export default function EditCardModal({ card, onClose }) {
               </select>
             </Field>
             <Field label="Épica">
-              <select value={epicId} onChange={e => setEpicId(e.target.value)} style={{ ...F, cursor: filteredEpics.length > 0 ? 'pointer' : 'not-allowed', opacity: filteredEpics.length > 0 ? 1 : 0.5 }}>
-                <option value="">Sin épica</option>
-                {filteredEpics.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              <select
+                value={epicId}
+                onChange={e => setEpicId(e.target.value)}
+                disabled={!areaId}
+                style={{ ...F, cursor: areaId ? 'pointer' : 'not-allowed', opacity: areaId ? 1 : 0.5 }}
+              >
+                <option value="">{!areaId ? 'Selecciona un área primero' : 'Sin épica'}</option>
+                {epicsByProject.map(({ project, epics: pEpics }) => (
+                  <optgroup key={project.id} label={project.name}>
+                    {pEpics.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                  </optgroup>
+                ))}
+                {orphanEpics.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </Field>
           </Section>

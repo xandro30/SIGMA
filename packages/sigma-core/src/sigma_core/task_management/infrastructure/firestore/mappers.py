@@ -149,6 +149,7 @@ def area_to_dict(area: Area) -> dict:
         "name": area.name,
         "description": area.description,
         "objectives": area.objectives,
+        "color_id": area.color_id,
         "created_at": _to_timestamp(area.created_at),
         "updated_at": _to_timestamp(area.updated_at),
     }
@@ -159,7 +160,8 @@ def area_from_dict(data: dict) -> Area:
         id=AreaId(data["id"]),
         name=data["name"],
         description=data.get("description"),
-        objectives=data.get("objectives", []),
+        objectives=data.get("objectives") if isinstance(data.get("objectives"), str) else None,
+        color_id=data.get("color_id"),
         created_at=_from_timestamp(data["created_at"]),
         updated_at=_from_timestamp(data["updated_at"]),
     )
@@ -185,7 +187,7 @@ def project_from_dict(data: dict) -> Project:
         id=ProjectId(data["id"]),
         name=data["name"],
         description=data.get("description"),
-        objectives=data.get("objectives", []),
+        objectives=data.get("objectives") if isinstance(data.get("objectives"), str) else None,
         area_id=AreaId(data["area_id"]),
         status=ProjectStatus(data["status"]),
         created_at=_from_timestamp(data["created_at"]),

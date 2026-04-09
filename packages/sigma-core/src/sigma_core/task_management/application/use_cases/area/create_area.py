@@ -7,6 +7,7 @@ from sigma_core.task_management.domain.ports.area_repository import AreaReposito
 @dataclass
 class CreateAreaCommand:
     name: str
+    color_id: str | None = None
 
 
 class CreateArea:
@@ -14,6 +15,6 @@ class CreateArea:
         self._area_repo = area_repo
 
     async def execute(self, cmd: CreateAreaCommand) -> AreaId:
-        area = Area(id=AreaId.generate(), name=cmd.name)
+        area = Area(id=AreaId.generate(), name=cmd.name, color_id=cmd.color_id)
         await self._area_repo.save(area)
         return area.id

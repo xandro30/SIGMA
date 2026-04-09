@@ -19,10 +19,10 @@ export default function EditProjectModal({ project, areaId, onClose }) {
   const [name,        setName]        = useState(project.name ?? '');
   const [description, setDescription] = useState(project.description ?? '');
   const [status,      setStatus]      = useState(project.status ?? 'active');
-  const [objectives,  setObjectives]  = useState((project.objectives ?? []).join('\n'));
+  const [objectives,  setObjectives]  = useState(project.objectives ?? '');
 
   const handleSave = () => {
-    update({ name, description, status, objectives: objectives.split('\n').map(s => s.trim()).filter(Boolean) }, { onSuccess: onClose });
+    update({ name, description, status, objectives: objectives.trim() || null }, { onSuccess: onClose });
   };
 
   return (
@@ -42,8 +42,8 @@ export default function EditProjectModal({ project, areaId, onClose }) {
       <Field label="Descripción">
         <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ ...fieldStyle, resize: 'vertical' }} />
       </Field>
-      <Field label="Objetivos (uno por línea)">
-        <textarea value={objectives} onChange={e => setObjectives(e.target.value)} rows={4} placeholder="Objetivo 1&#10;Objetivo 2" style={{ ...fieldStyle, resize: 'vertical' }} />
+      <Field label="Objetivos">
+        <textarea value={objectives} onChange={e => setObjectives(e.target.value)} rows={4} placeholder="¿Qué quieres lograr con este proyecto?" style={{ ...fieldStyle, resize: 'vertical' }} />
       </Field>
     </BaseEditModal>
   );

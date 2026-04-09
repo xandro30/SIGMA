@@ -10,12 +10,12 @@ export default function EditAreaModal({ area, onClose }) {
   const [name,        setName]        = useState(area.name ?? '');
   const [description, setDescription] = useState(area.description ?? '');
   const [colorId,     setColorId]     = useState(area.color_id ?? 'azul');
-  const [objectives,  setObjectives]  = useState((area.objectives ?? []).join('\n'));
+  const [objectives,  setObjectives]  = useState(area.objectives ?? '');
 
   const hex = getAreaHex(colorId);
 
   const handleSave = () => {
-    update({ id: area.id, name, description, color_id: colorId, objectives: objectives.split('\n').map(s => s.trim()).filter(Boolean) }, { onSuccess: onClose });
+    update({ id: area.id, name, description, color_id: colorId, objectives: objectives.trim() || null }, { onSuccess: onClose });
   };
 
   return (
@@ -36,8 +36,8 @@ export default function EditAreaModal({ area, onClose }) {
           })}
         </div>
       </Field>
-      <Field label="Objetivos (uno por línea)">
-        <textarea value={objectives} onChange={e => setObjectives(e.target.value)} rows={4} placeholder="Objetivo 1&#10;Objetivo 2" style={{ ...fieldStyle, resize: 'vertical' }} />
+      <Field label="Objetivos">
+        <textarea value={objectives} onChange={e => setObjectives(e.target.value)} rows={4} placeholder="¿Qué quieres lograr con esta área?" style={{ ...fieldStyle, resize: 'vertical' }} />
       </Field>
     </BaseEditModal>
   );

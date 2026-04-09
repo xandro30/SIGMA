@@ -7,7 +7,8 @@ class Area:
     id: AreaId
     name: str
     description: str | None = None
-    objectives: list[str] = field(default_factory=list)
+    objectives: str | None = None
+    color_id: str | None = None
     created_at: Timestamp = field(default_factory=Timestamp.now)
     updated_at: Timestamp = field(default_factory=Timestamp.now)
 
@@ -26,11 +27,10 @@ class Area:
         self.description = description
         self.updated_at = Timestamp.now()
 
-    def add_objective(self, objective: str) -> None:
-        if objective not in self.objectives:
-            self.objectives.append(objective)
-            self.updated_at = Timestamp.now()
+    def update_objectives(self, objectives: str | None) -> None:
+        self.objectives = objectives
+        self.updated_at = Timestamp.now()
 
-    def remove_objective(self, objective: str) -> None:
-        self.objectives = [o for o in self.objectives if o != objective]
+    def update_color(self, color_id: str | None) -> None:
+        self.color_id = color_id
         self.updated_at = Timestamp.now()

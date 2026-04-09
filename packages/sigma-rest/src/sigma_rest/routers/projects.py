@@ -35,6 +35,12 @@ async def create_project(
     return project_to_response(project)
 
 
+@router.get("/projects/{project_id}")
+async def get_project(project_id: str, project_repo=Depends(get_project_repo)):
+    project = await project_repo.get_by_id(ProjectId(project_id))
+    return project_to_response(project)
+
+
 @router.patch("/projects/{project_id}")
 async def update_project(
     project_id: str,
@@ -46,6 +52,7 @@ async def update_project(
         project_id=ProjectId(project_id),
         name=body.name,
         description=body.description,
+        objectives=body.objectives,
         status=ProjectStatus(body.status) if body.status else None,
     ))
     project = await project_repo.get_by_id(ProjectId(project_id))
