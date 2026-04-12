@@ -1,7 +1,8 @@
 import pytest
 from sigma_core.task_management.domain.entities.project import Project
 from sigma_core.task_management.domain.enums import ProjectStatus
-from sigma_core.task_management.domain.value_objects import ProjectId, AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
+from sigma_core.task_management.domain.value_objects import ProjectId
 from sigma_core.task_management.infrastructure.firestore.project_repository import FirestoreProjectRepository
 
 

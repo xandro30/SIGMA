@@ -3,14 +3,32 @@ from sigma_core.task_management.domain.aggregates.card import Card
 from sigma_core.task_management.domain.aggregates.space import (
     Space, WorkflowState, BEGIN_STATE_ID, FINISH_STATE_ID,
 )
+from sigma_core.shared_kernel.enums import CardSize
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
 from sigma_core.task_management.domain.errors import (
-    CardNotFoundError, SpaceNotFoundError,
-    InvalidTransitionError, AreaNotFoundError, EpicNotFoundError, InvalidEpicSpaceError,
+    CardNotFoundError,
+    SpaceNotFoundError,
+    InvalidTransitionError,
+    AreaNotFoundError,
+    EpicNotFoundError,
+    InvalidEpicSpaceError,
+    TimerAlreadyRunningError,
+    TimerNotRunningError,
+    SpaceHasActiveTimerError,
+)
+from sigma_core.shared_kernel.value_objects import (
+    CardId,
+    SpaceId,
+    AreaId,
+    Minutes,
+    SizeMapping,
 )
 from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, SpaceName, CardTitle, WorkflowStateId,
-    AreaId, EpicId, ProjectId,
+    SpaceName,
+    CardTitle,
+    WorkflowStateId,
+    EpicId,
+    ProjectId,
 )
 from sigma_core.task_management.domain.entities.area import Area
 from sigma_core.task_management.domain.entities.epic import Epic
@@ -43,7 +61,9 @@ from sigma_core.task_management.application.use_cases.card.move_triage_stage imp
     MoveTriageStage, MoveTriageStageCommand,
 )
 from sigma_core.task_management.domain.errors import (
-    CardNotInTriageError, AlreadyInStageError, InboxNotAllowedError,
+    CardNotInTriageError,
+    AlreadyInStageError,
+    InboxNotAllowedError,
 )
 
 
@@ -601,4 +621,241 @@ async def test_move_triage_stage_inbox_not_allowed_raises(space):
         await use_case.execute(MoveTriageStageCommand(
             card_id=card.id,
             target_stage=PreWorkflowStage.INBOX,
+        ))
+
+
+# ── AssignSize use case ──────────────────────────────────────────
+
+from sigma_core.task_management.application.use_cases.card.assign_size import (
+    AssignSize, AssignSizeCommand,
+)
+
+
+@pytest.mark.asyncio
+async def test_assign_size_establece_tamaño(card_in_backlog):
+    space, card = card_in_backlog
+    card_repo = FakeCardRepository()
+    await card_repo.save(card)
+    use_case = AssignSize(card_repo)
+
+    await use_case.execute(AssignSizeCommand(card_id=card.id, size=CardSize.M))
+
+    updated = await card_repo.get_by_id(card.id)
+    assert updated.size == CardSize.M
+
+
+@pytest.mark.asyncio
+async def test_assign_size_none_limpia_tamaño(card_in_backlog):
+    space, card = card_in_backlog
+    card.assign_size(CardSize.L)
+    card_repo = FakeCardRepository()
+    await card_repo.save(card)
+    use_case = AssignSize(card_repo)
+
+    await use_case.execute(AssignSizeCommand(card_id=card.id, size=None))
+
+    updated = await card_repo.get_by_id(card.id)
+    assert updated.size is None
+
+
+@pytest.mark.asyncio
+async def test_assign_size_card_not_found_raises():
+    card_repo = FakeCardRepository()
+    use_case = AssignSize(card_repo)
+
+    with pytest.raises(CardNotFoundError):
+        await use_case.execute(AssignSizeCommand(card_id=CardId.generate(), size=CardSize.M))
+
+
+# ── StartTimer / StopTimer use cases ─────────────────────────────
+
+from sigma_core.task_management.application.use_cases.card.start_timer import (
+    StartTimer, StartTimerCommand,
+)
+from sigma_core.task_management.application.use_cases.card.stop_timer import (
+    StopTimer, StopTimerCommand,
+)
+from tests.helpers.timestamps import ts as _ts
+
+
+@pytest.mark.asyncio
+async def test_start_timer_marca_timestamp(card_in_backlog):
+    space, card = card_in_backlog
+    card_repo = FakeCardRepository()
+    await card_repo.save(card)
+    use_case = StartTimer(card_repo)
+    now = _ts(2026, 1, 1, 10, 0)
+
+    await use_case.execute(StartTimerCommand(card_id=card.id, now=now))
+
+    updated = await card_repo.get_by_id(card.id)
+    assert updated.timer_started_at == now
+
+
+@pytest.mark.asyncio
+async def test_start_timer_card_not_found_raises():
+    card_repo = FakeCardRepository()
+    use_case = StartTimer(card_repo)
+
+    with pytest.raises(CardNotFoundError):
+        await use_case.execute(StartTimerCommand(
+            card_id=CardId.generate(),
+            now=_ts(2026, 1, 1, 10, 0),
+        ))
+
+
+@pytest.mark.asyncio
+async def test_start_timer_lanza_error_si_otra_card_del_mismo_space_tiene_timer_activo(space):
+    card_repo = FakeCardRepository()
+    busy_card = Card(
+        id=CardId.generate(),
+        space_id=space.id,
+        title=CardTitle("Card ocupada"),
+        pre_workflow_stage=PreWorkflowStage.BACKLOG,
+        workflow_state_id=None,
+    )
+    busy_card.start_timer(_ts(2026, 1, 1, 9, 0))
+    await card_repo.save(busy_card)
+
+    new_card = Card(
+        id=CardId.generate(),
+        space_id=space.id,
+        title=CardTitle("Card nueva"),
+        pre_workflow_stage=PreWorkflowStage.BACKLOG,
+        workflow_state_id=None,
+    )
+    await card_repo.save(new_card)
+    use_case = StartTimer(card_repo)
+
+    with pytest.raises(SpaceHasActiveTimerError) as exc_info:
+        await use_case.execute(StartTimerCommand(
+            card_id=new_card.id,
+            now=_ts(2026, 1, 1, 10, 0),
+        ))
+
+    assert exc_info.value.space_id == space.id.value
+    assert exc_info.value.active_card_id == busy_card.id.value
+
+
+@pytest.mark.asyncio
+async def test_start_timer_permite_iniciar_en_otra_card_si_el_timer_activo_es_de_otro_space():
+    repo = FakeCardRepository()
+    space_a = SpaceId.generate()
+    space_b = SpaceId.generate()
+
+    busy_card = Card(
+        id=CardId.generate(),
+        space_id=space_a,
+        title=CardTitle("Card ocupada en A"),
+        pre_workflow_stage=PreWorkflowStage.BACKLOG,
+        workflow_state_id=None,
+    )
+    busy_card.start_timer(_ts(2026, 1, 1, 9, 0))
+    await repo.save(busy_card)
+
+    new_card = Card(
+        id=CardId.generate(),
+        space_id=space_b,
+        title=CardTitle("Card nueva en B"),
+        pre_workflow_stage=PreWorkflowStage.BACKLOG,
+        workflow_state_id=None,
+    )
+    await repo.save(new_card)
+    use_case = StartTimer(repo)
+
+    await use_case.execute(StartTimerCommand(
+        card_id=new_card.id,
+        now=_ts(2026, 1, 1, 10, 0),
+    ))
+
+    updated = await repo.get_by_id(new_card.id)
+    assert updated.timer_started_at == _ts(2026, 1, 1, 10, 0)
+
+
+@pytest.mark.asyncio
+async def test_stop_timer_acumula_actual_time(card_in_backlog):
+    space, card = card_in_backlog
+    card.start_timer(_ts(2026, 1, 1, 10, 0))
+    card_repo = FakeCardRepository()
+    await card_repo.save(card)
+    use_case = StopTimer(card_repo)
+
+    await use_case.execute(StopTimerCommand(
+        card_id=card.id,
+        now=_ts(2026, 1, 1, 10, 45),
+    ))
+
+    updated = await card_repo.get_by_id(card.id)
+    assert updated.actual_time == Minutes(45)
+    assert updated.timer_started_at is None
+
+
+@pytest.mark.asyncio
+async def test_stop_timer_sin_timer_corriendo_raises(card_in_backlog):
+    space, card = card_in_backlog
+    card_repo = FakeCardRepository()
+    await card_repo.save(card)
+    use_case = StopTimer(card_repo)
+
+    with pytest.raises(TimerNotRunningError):
+        await use_case.execute(StopTimerCommand(
+            card_id=card.id,
+            now=_ts(2026, 1, 1, 10, 45),
+        ))
+
+
+@pytest.mark.asyncio
+async def test_stop_timer_card_not_found_raises():
+    card_repo = FakeCardRepository()
+    use_case = StopTimer(card_repo)
+
+    with pytest.raises(CardNotFoundError):
+        await use_case.execute(StopTimerCommand(
+            card_id=CardId.generate(),
+            now=_ts(2026, 1, 1, 10, 0),
+        ))
+
+
+# ── SetSizeMapping use case ──────────────────────────────────────
+
+from sigma_core.task_management.application.use_cases.space.set_size_mapping import (
+    SetSizeMapping, SetSizeMappingCommand,
+)
+
+
+@pytest.mark.asyncio
+async def test_set_size_mapping_establece_mapping(space):
+    space_repo = FakeSpaceRepository()
+    await space_repo.save(space)
+    use_case = SetSizeMapping(space_repo)
+    mapping = SizeMapping.default()
+
+    await use_case.execute(SetSizeMappingCommand(space_id=space.id, mapping=mapping))
+
+    updated = await space_repo.get_by_id(space.id)
+    assert updated.size_mapping == mapping
+
+
+@pytest.mark.asyncio
+async def test_set_size_mapping_none_limpia(space):
+    space.set_size_mapping(SizeMapping.default())
+    space_repo = FakeSpaceRepository()
+    await space_repo.save(space)
+    use_case = SetSizeMapping(space_repo)
+
+    await use_case.execute(SetSizeMappingCommand(space_id=space.id, mapping=None))
+
+    updated = await space_repo.get_by_id(space.id)
+    assert updated.size_mapping is None
+
+
+@pytest.mark.asyncio
+async def test_set_size_mapping_space_not_found_raises():
+    space_repo = FakeSpaceRepository()
+    use_case = SetSizeMapping(space_repo)
+
+    with pytest.raises(SpaceNotFoundError):
+        await use_case.execute(SetSizeMappingCommand(
+            space_id=SpaceId.generate(),
+            mapping=SizeMapping.default(),
         ))

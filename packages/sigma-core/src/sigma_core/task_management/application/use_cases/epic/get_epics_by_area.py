@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass
 
 from sigma_core.task_management.domain.entities.epic import Epic
-from sigma_core.task_management.domain.value_objects import AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
 from sigma_core.task_management.domain.ports.project_repository import ProjectRepository
 from sigma_core.task_management.domain.ports.epic_repository import EpicRepository
 

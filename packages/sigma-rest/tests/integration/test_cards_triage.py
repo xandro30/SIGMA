@@ -1,5 +1,5 @@
 import pytest
-from sigma_core.task_management.domain.value_objects import CardId
+from sigma_core.shared_kernel.value_objects import CardId
 
 
 @pytest.mark.asyncio

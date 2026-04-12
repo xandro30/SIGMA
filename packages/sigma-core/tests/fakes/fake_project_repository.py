@@ -1,5 +1,6 @@
 from sigma_core.task_management.domain.entities.project import Project
-from sigma_core.task_management.domain.value_objects import ProjectId, AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
+from sigma_core.task_management.domain.value_objects import ProjectId
 
 
 class FakeProjectRepository:

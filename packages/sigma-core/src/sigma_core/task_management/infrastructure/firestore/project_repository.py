@@ -2,9 +2,10 @@ from google.cloud.firestore import AsyncClient
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from sigma_core.task_management.domain.entities.project import Project
-from sigma_core.task_management.domain.value_objects import ProjectId, AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
+from sigma_core.task_management.domain.value_objects import ProjectId
 from sigma_core.task_management.infrastructure.firestore.mappers import (
-    project_to_dict, project_from_dict,
+    project_to_dict, project_from_dict, snapshot_data,
 )
 
 
@@ -21,7 +22,7 @@ class FirestoreProjectRepository:
         doc = await self._client.collection(self.COLLECTION).document(project_id.value).get()
         if not doc.exists:
             return None
-        return project_from_dict(doc.to_dict())
+        return project_from_dict(snapshot_data(doc))
 
     async def get_by_area(self, area_id: AreaId) -> list[Project]:
         docs = await (
@@ -29,11 +30,11 @@ class FirestoreProjectRepository:
             .where(filter=FieldFilter("area_id", "==", area_id.value))
             .get()
         )
-        return [project_from_dict(doc.to_dict()) for doc in docs]
+        return [project_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def get_all(self) -> list[Project]:
         docs = await self._client.collection(self.COLLECTION).get()
-        return [project_from_dict(doc.to_dict()) for doc in docs]
+        return [project_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def delete(self, project_id: ProjectId) -> None:
         await self._client.collection(self.COLLECTION).document(project_id.value).delete()

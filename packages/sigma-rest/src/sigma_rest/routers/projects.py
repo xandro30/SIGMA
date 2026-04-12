@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 
-from sigma_core.task_management.domain.value_objects import AreaId, ProjectId
+from sigma_core.shared_kernel.value_objects import AreaId
+from sigma_core.task_management.domain.value_objects import ProjectId
 from sigma_core.task_management.domain.enums import ProjectStatus
 from sigma_core.task_management.application.use_cases.project.create_project import CreateProject, CreateProjectCommand
 from sigma_core.task_management.application.use_cases.project.update_project import UpdateProject, UpdateProjectCommand

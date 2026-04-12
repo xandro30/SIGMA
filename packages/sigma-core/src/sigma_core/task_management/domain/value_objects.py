@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
 import urllib.parse
 import uuid
 from dataclasses import dataclass
 
 
-# ── Identificadores ───────────────────────────────────────────────
+# ── Identifier helpers ────────────────────────────────────────────
 
 
 def _validate_uuid4(value: str, class_name: str) -> None:
@@ -19,28 +17,7 @@ def _validate_uuid4(value: str, class_name: str) -> None:
         raise ValueError(f"{class_name} inválido: {value!r} — debe ser un UUID v4")
 
 
-@dataclass(frozen=True)
-class CardId:
-    value: str
-
-    def __post_init__(self) -> None:
-        _validate_uuid4(self.value, "CardId")
-
-    @classmethod
-    def generate(cls) -> CardId:
-        return cls(str(uuid.uuid4()))
-
-
-@dataclass(frozen=True)
-class SpaceId:
-    value: str
-
-    def __post_init__(self) -> None:
-        _validate_uuid4(self.value, "SpaceId")
-
-    @classmethod
-    def generate(cls) -> SpaceId:
-        return cls(str(uuid.uuid4()))
+# ── Identifiers propios del BC ────────────────────────────────────
 
 
 @dataclass(frozen=True)
@@ -52,18 +29,6 @@ class WorkflowStateId:
 
     @classmethod
     def generate(cls) -> WorkflowStateId:
-        return cls(str(uuid.uuid4()))
-
-
-@dataclass(frozen=True)
-class AreaId:
-    value: str
-
-    def __post_init__(self) -> None:
-        _validate_uuid4(self.value, "AreaId")
-
-    @classmethod
-    def generate(cls) -> AreaId:
         return cls(str(uuid.uuid4()))
 
 
@@ -157,19 +122,3 @@ class ChecklistItem:
 
     def reopen(self) -> ChecklistItem:
         return ChecklistItem(text=self.text, done=False)
-
-
-# ── Datetime ─────────────────────────────────────────────────
-
-
-@dataclass(frozen=True)
-class Timestamp:
-    value: datetime
-
-    def __post_init__(self):
-        if self.value.tzinfo is None:
-            raise ValueError("Timestamp must be timezone-aware")
-
-    @classmethod
-    def now(cls) -> "Timestamp":
-        return cls(datetime.now(ZoneInfo("Europe/Madrid")))

@@ -2,9 +2,22 @@ import pytest
 from datetime import datetime
 import uuid
 
+from sigma_core.shared_kernel.enums import CardSize
+from sigma_core.shared_kernel.value_objects import (
+    CardId,
+    SpaceId,
+    AreaId,
+    Timestamp,
+    Minutes,
+    SizeMapping,
+)
 from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, WorkflowStateId, AreaId, ProjectId, EpicId,
-    CardTitle, Url, ChecklistItem, Timestamp
+    WorkflowStateId,
+    ProjectId,
+    EpicId,
+    CardTitle,
+    Url,
+    ChecklistItem,
 )
 
 
@@ -219,3 +232,190 @@ def test_timestamp_naive_datetime_raises_value_error():
 
     with pytest.raises(ValueError):
         Timestamp(datetime(2026, 1, 1))
+
+
+# ── CardSize ──────────────────────────────────────────────────────
+
+def test_card_size_tiene_los_siete_valores_esperados():
+    expected = {"xxs", "xs", "s", "m", "l", "xl", "xxl"}
+
+    actual = {size.value for size in CardSize}
+
+    assert actual == expected
+
+
+def test_card_size_valores_en_orden_ascendente_de_esfuerzo():
+    order = [
+        CardSize.XXS, CardSize.XS, CardSize.S,
+        CardSize.M, CardSize.L, CardSize.XL, CardSize.XXL,
+    ]
+
+    assert len(order) == len(CardSize)
+
+
+# ── Minutes ───────────────────────────────────────────────────────
+
+def test_minutes_cero_es_valido():
+    result = Minutes(0)
+
+    assert result.value == 0
+
+
+def test_minutes_positivo_es_valido():
+    result = Minutes(120)
+
+    assert result.value == 120
+
+
+def test_minutes_negativo_lanza_value_error():
+    with pytest.raises(ValueError):
+        Minutes(-1)
+
+
+def test_minutes_suma_devuelve_nueva_instancia():
+    a = Minutes(30)
+    b = Minutes(45)
+
+    result = a + b
+
+    assert result == Minutes(75)
+    assert a.value == 30
+
+
+def test_dos_minutes_con_mismo_valor_son_iguales():
+    assert Minutes(60) == Minutes(60)
+
+
+def test_minutes_es_inmutable():
+    result = Minutes(10)
+
+    with pytest.raises(Exception):
+        result.value = 20
+
+
+# ── SizeMapping ───────────────────────────────────────────────────
+
+def test_size_mapping_default_tiene_una_entrada_por_cada_card_size():
+    mapping = SizeMapping.default()
+
+    for size in CardSize:
+        assert mapping.get_minutes(size) is not None
+
+
+def test_size_mapping_default_values():
+    mapping = SizeMapping.default()
+
+    assert mapping.get_minutes(CardSize.XXS) == Minutes(60)
+    assert mapping.get_minutes(CardSize.XS) == Minutes(120)
+    assert mapping.get_minutes(CardSize.S) == Minutes(240)
+    assert mapping.get_minutes(CardSize.M) == Minutes(480)
+    assert mapping.get_minutes(CardSize.L) == Minutes(960)
+    assert mapping.get_minutes(CardSize.XL) == Minutes(1920)
+    assert mapping.get_minutes(CardSize.XXL) == Minutes(3840)
+
+
+def test_size_mapping_con_entrada_faltante_lanza_value_error():
+    incomplete = {CardSize.XXS: Minutes(60)}
+
+    with pytest.raises(ValueError):
+        SizeMapping(entries=incomplete)
+
+
+def test_size_mapping_custom_valores_validos():
+    entries = {
+        CardSize.XXS: Minutes(30),
+        CardSize.XS: Minutes(60),
+        CardSize.S: Minutes(120),
+        CardSize.M: Minutes(240),
+        CardSize.L: Minutes(480),
+        CardSize.XL: Minutes(960),
+        CardSize.XXL: Minutes(1920),
+    }
+
+    mapping = SizeMapping(entries=entries)
+
+    assert mapping.get_minutes(CardSize.M) == Minutes(240)
+
+
+def test_dos_size_mapping_con_mismas_entradas_son_iguales():
+    a = SizeMapping.default()
+    b = SizeMapping.default()
+
+    assert a == b
+
+
+def test_size_mapping_to_primitive_devuelve_dict_ordenado_canonicamente():
+    mapping = SizeMapping.default()
+
+    primitive = mapping.to_primitive()
+
+    assert list(primitive.keys()) == ["xxs", "xs", "s", "m", "l", "xl", "xxl"]
+    assert primitive["m"] == 480
+    assert primitive["xxl"] == 3840
+
+
+def test_size_mapping_to_primitive_orden_es_canonico_independiente_del_insert_order():
+    reversed_entries = {
+        CardSize.XXL: Minutes(3840),
+        CardSize.XL: Minutes(1920),
+        CardSize.L: Minutes(960),
+        CardSize.M: Minutes(480),
+        CardSize.S: Minutes(240),
+        CardSize.XS: Minutes(120),
+        CardSize.XXS: Minutes(60),
+    }
+    mapping = SizeMapping(entries=reversed_entries)
+
+    primitive = mapping.to_primitive()
+
+    assert list(primitive.keys()) == ["xxs", "xs", "s", "m", "l", "xl", "xxl"]
+
+
+def test_size_mapping_from_primitive_reconstruye_valor():
+    primitive = {
+        "xxs": 30,
+        "xs": 60,
+        "s": 120,
+        "m": 240,
+        "l": 480,
+        "xl": 960,
+        "xxl": 1920,
+    }
+
+    mapping = SizeMapping.from_primitive(primitive)
+
+    assert mapping.get_minutes(CardSize.M) == Minutes(240)
+    assert mapping.get_minutes(CardSize.XXL) == Minutes(1920)
+
+
+def test_size_mapping_from_primitive_con_key_invalida_lanza_value_error():
+    with pytest.raises(ValueError):
+        SizeMapping.from_primitive({"foo": 30})
+
+
+def test_size_mapping_from_primitive_incompleto_lanza_value_error():
+    with pytest.raises(ValueError):
+        SizeMapping.from_primitive({"xxs": 30, "s": 120})
+
+
+def test_size_mapping_from_primitive_con_valor_negativo_lanza_value_error():
+    complete_but_negative = {
+        "xxs": -1,
+        "xs": 60,
+        "s": 120,
+        "m": 240,
+        "l": 480,
+        "xl": 960,
+        "xxl": 1920,
+    }
+
+    with pytest.raises(ValueError):
+        SizeMapping.from_primitive(complete_but_negative)
+
+
+def test_size_mapping_round_trip_primitive():
+    original = SizeMapping.default()
+
+    round_tripped = SizeMapping.from_primitive(original.to_primitive())
+
+    assert round_tripped == original

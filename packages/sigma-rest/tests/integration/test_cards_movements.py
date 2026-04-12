@@ -12,8 +12,11 @@ from sigma_core.task_management.domain.aggregates.card import Card
 from sigma_core.task_management.domain.aggregates.space import (
     Space, WorkflowState, BEGIN_STATE_ID, FINISH_STATE_ID,
 )
+from sigma_core.shared_kernel.value_objects import CardId, SpaceId
 from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, SpaceName, CardTitle, WorkflowStateId,
+    SpaceName,
+    CardTitle,
+    WorkflowStateId,
 )
 from sigma_core.task_management.domain.enums import PreWorkflowStage
 

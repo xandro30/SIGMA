@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
-from sigma_core.task_management.domain.value_objects import (
-    EpicId, SpaceId, ProjectId, AreaId, Timestamp,
-)
+from sigma_core.shared_kernel.value_objects import SpaceId, AreaId, Timestamp
+from sigma_core.task_management.domain.value_objects import EpicId, ProjectId
 
 
 @dataclass

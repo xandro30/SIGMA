@@ -1,9 +1,9 @@
 from google.cloud.firestore import AsyncClient
 
 from sigma_core.task_management.domain.entities.area import Area
-from sigma_core.task_management.domain.value_objects import AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
 from sigma_core.task_management.infrastructure.firestore.mappers import (
-    area_to_dict, area_from_dict,
+    area_to_dict, area_from_dict, snapshot_data,
 )
 
 
@@ -20,11 +20,11 @@ class FirestoreAreaRepository:
         doc = await self._client.collection(self.COLLECTION).document(area_id.value).get()
         if not doc.exists:
             return None
-        return area_from_dict(doc.to_dict())
+        return area_from_dict(snapshot_data(doc))
 
     async def get_all(self) -> list[Area]:
         docs = await self._client.collection(self.COLLECTION).get()
-        return [area_from_dict(doc.to_dict()) for doc in docs]
+        return [area_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def delete(self, area_id: AreaId) -> None:
         await self._client.collection(self.COLLECTION).document(area_id.value).delete()

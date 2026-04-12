@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from sigma_core.shared_kernel.error_result import ErrorResult
+from sigma_core.shared_kernel.errors import SigmaDomainError
 from sigma_core.task_management.domain.errors import (
-    SigmaDomainError,
     InvalidWorkflowError,
     StateNotFoundError,
     DuplicateStateError,
@@ -16,15 +16,11 @@ from sigma_core.task_management.domain.errors import (
     CardNotInTriageError,
     InboxNotAllowedError,
     AlreadyInStageError,
+    TimerAlreadyRunningError,
+    TimerNotRunningError,
+    InvalidTimerClockError,
+    SpaceHasActiveTimerError,
 )
-
-
-@dataclass(frozen=True)
-class ErrorResult:
-    code: str
-    message: str
-    detail: dict
-    status_code: int
 
 
 def handle_domain_error(exc: SigmaDomainError) -> ErrorResult:
@@ -59,5 +55,21 @@ def handle_domain_error(exc: SigmaDomainError) -> ErrorResult:
             return ErrorResult(code="inbox_not_allowed", message=str(exc), detail={}, status_code=422)
         case AlreadyInStageError():
             return ErrorResult(code="already_in_stage", message=str(exc), detail={}, status_code=409)
+        case TimerAlreadyRunningError():
+            return ErrorResult(code="timer_already_running", message=str(exc), detail={}, status_code=409)
+        case TimerNotRunningError():
+            return ErrorResult(code="timer_not_running", message=str(exc), detail={}, status_code=409)
+        case InvalidTimerClockError():
+            return ErrorResult(code="invalid_timer_clock", message=str(exc), detail={}, status_code=422)
+        case SpaceHasActiveTimerError():
+            return ErrorResult(
+                code="space_has_active_timer",
+                message=str(exc),
+                detail={
+                    "space_id": exc.space_id,
+                    "active_card_id": exc.active_card_id,
+                },
+                status_code=409,
+            )
         case _:
             return ErrorResult(code="domain_error", message=str(exc), detail={}, status_code=500)

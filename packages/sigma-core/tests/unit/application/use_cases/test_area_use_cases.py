@@ -1,7 +1,7 @@
 import pytest
 from sigma_core.task_management.domain.entities.area import Area
 from sigma_core.task_management.domain.errors import AreaNotFoundError
-from sigma_core.task_management.domain.value_objects import AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
 from sigma_core.task_management.application.use_cases.area.create_area import (
     CreateArea, CreateAreaCommand,
 )

@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 from sigma_core.task_management.domain.errors import (
-    CardNotFoundError, SpaceNotFoundError,
-    InvalidTransitionError, StateNotFoundError,
+    CardNotFoundError,
+    SpaceNotFoundError,
+    InvalidTransitionError,
+    StateNotFoundError,
 )
-from sigma_core.task_management.domain.value_objects import CardId, WorkflowStateId
+from sigma_core.shared_kernel.value_objects import CardId
+from sigma_core.task_management.domain.value_objects import WorkflowStateId
 from sigma_core.task_management.domain.aggregates.space import BEGIN_STATE_ID
 from sigma_core.task_management.domain.ports.card_repository import CardRepository
 from sigma_core.task_management.domain.ports.space_repository import SpaceRepository

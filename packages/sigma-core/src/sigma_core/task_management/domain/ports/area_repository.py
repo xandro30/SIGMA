@@ -1,6 +1,6 @@
 from typing import Protocol
 from sigma_core.task_management.domain.entities.area import Area
-from sigma_core.task_management.domain.value_objects import AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
 
 
 class AreaRepository(Protocol):

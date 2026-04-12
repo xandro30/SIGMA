@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -76,6 +78,10 @@ class AssignEpicRequest(BaseModel):
     epic_id: str | None
 
 
+class AssignSizeRequest(BaseModel):
+    size: Literal["xxs", "xs", "s", "m", "l", "xl", "xxl"] | None
+
+
 class ChecklistItemResponse(BaseModel):
     text: str
     done: bool
@@ -98,5 +104,8 @@ class CardResponse(BaseModel):
     checklist: list[ChecklistItemResponse] = []
     related_cards: list[str] = []
     due_date: str | None = None
+    size: str | None = None
+    actual_time: int
+    timer_started_at: str | None = None
     created_at: str
     updated_at: str

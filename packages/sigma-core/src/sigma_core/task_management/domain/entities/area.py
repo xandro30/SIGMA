@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from sigma_core.task_management.domain.value_objects import AreaId, Timestamp
+from sigma_core.shared_kernel.value_objects import AreaId, Timestamp
 
 
 @dataclass

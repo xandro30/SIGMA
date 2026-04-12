@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
 
 from sigma_core.task_management.domain.errors import (
-    InvalidWorkflowError, StateNotFoundError, DuplicateStateError,
+    InvalidWorkflowError,
+    StateNotFoundError,
+    DuplicateStateError,
 )
-from sigma_core.task_management.domain.value_objects import (
-    SpaceId, SpaceName, WorkflowStateId, Timestamp,
-)
+from sigma_core.shared_kernel.value_objects import SpaceId, Timestamp, SizeMapping
+from sigma_core.task_management.domain.value_objects import SpaceName, WorkflowStateId
 
 
 BEGIN_STATE_ID = WorkflowStateId("00000000-0000-4000-a000-000000000001")
@@ -33,6 +34,7 @@ class Space:
     name: SpaceName
     workflow_states: list[WorkflowState] = field(default_factory=list)
     transitions: list[Transition] = field(default_factory=list)
+    size_mapping: SizeMapping | None = None
     created_at: Timestamp = field(default_factory=Timestamp.now)
     updated_at: Timestamp = field(default_factory=Timestamp.now)
 
@@ -114,4 +116,8 @@ class Space:
             t for t in self.transitions
             if not (t.from_id == from_id and t.to_id == to_id)
         ]
+        self.updated_at = Timestamp.now()
+
+    def set_size_mapping(self, mapping: SizeMapping | None) -> None:
+        self.size_mapping = mapping
         self.updated_at = Timestamp.now()

@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
-from sigma_core.task_management.domain.value_objects import SpaceId, SpaceName, WorkflowStateId
+from sigma_core.shared_kernel.value_objects import SpaceId, SizeMapping
+from sigma_core.task_management.domain.value_objects import SpaceName, WorkflowStateId
 from sigma_core.task_management.application.use_cases.space.create_space import CreateSpace, CreateSpaceCommand
 from sigma_core.task_management.application.use_cases.space.add_workflow_state import AddWorkflowState, AddWorkflowStateCommand
 from sigma_core.task_management.application.use_cases.space.remove_workflow_state import RemoveWorkflowState, RemoveWorkflowStateCommand
 from sigma_core.task_management.application.use_cases.space.add_transition import AddTransition, AddTransitionCommand
+from sigma_core.task_management.application.use_cases.space.set_size_mapping import SetSizeMapping, SetSizeMappingCommand
 
-from sigma_rest.schemas.space_schemas import CreateSpaceRequest, AddWorkflowStateRequest, AddTransitionRequest, SpaceResponse
+from sigma_rest.schemas.space_schemas import (
+    CreateSpaceRequest, AddWorkflowStateRequest, AddTransitionRequest,
+    SetSizeMappingRequest, SpaceResponse,
+)
 from sigma_rest.mappers.space_mappers import space_to_response
 from sigma_rest.dependencies import get_space_repo
 
@@ -84,6 +89,32 @@ async def add_transition(
         space_id=SpaceId(space_id),
         from_id=WorkflowStateId(body.from_id),
         to_id=WorkflowStateId(body.to_id),
+    ))
+    space = await space_repo.get_by_id(SpaceId(space_id))
+    return space_to_response(space)
+
+
+@router.patch("/{space_id}/size-mapping", response_model=SpaceResponse)
+async def set_size_mapping(
+    space_id: str,
+    body: SetSizeMappingRequest,
+    space_repo=Depends(get_space_repo),
+):
+    mapping: SizeMapping | None
+    if body.mapping is None:
+        mapping = None
+    else:
+        try:
+            mapping = SizeMapping.from_primitive(body.mapping)
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "invalid_size_mapping", "message": str(exc)},
+            )
+    use_case = SetSizeMapping(space_repo)
+    await use_case.execute(SetSizeMappingCommand(
+        space_id=SpaceId(space_id),
+        mapping=mapping,
     ))
     space = await space_repo.get_by_id(SpaceId(space_id))
     return space_to_response(space)

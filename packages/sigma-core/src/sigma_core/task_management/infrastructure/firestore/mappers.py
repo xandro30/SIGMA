@@ -1,6 +1,7 @@
 from datetime import datetime, date
-from zoneinfo import ZoneInfo
+from typing import Any
 
+from sigma_core.shared_kernel.config import get_app_timezone
 from sigma_core.task_management.domain.aggregates.card import Card
 from sigma_core.task_management.domain.aggregates.space import (
     Space, WorkflowState, Transition,
@@ -8,16 +9,44 @@ from sigma_core.task_management.domain.aggregates.space import (
 from sigma_core.task_management.domain.entities.area import Area
 from sigma_core.task_management.domain.entities.project import Project
 from sigma_core.task_management.domain.entities.epic import Epic
+from sigma_core.shared_kernel.enums import CardSize
 from sigma_core.task_management.domain.enums import (
-    PreWorkflowStage, Priority, ProjectStatus,
+    PreWorkflowStage,
+    Priority,
+    ProjectStatus,
+)
+from sigma_core.shared_kernel.value_objects import (
+    CardId,
+    SpaceId,
+    AreaId,
+    Timestamp,
+    Minutes,
+    SizeMapping,
 )
 from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, WorkflowStateId, AreaId, ProjectId, EpicId,
-    CardTitle, SpaceName, Url, ChecklistItem, Timestamp,
+    WorkflowStateId,
+    ProjectId,
+    EpicId,
+    CardTitle,
+    SpaceName,
+    Url,
+    ChecklistItem,
 )
 
 
-MADRID_TZ = ZoneInfo("Europe/Madrid")
+
+
+# ── Snapshot helpers ──────────────────────────────────────────────
+
+def snapshot_data(doc) -> dict[str, Any]:
+    """
+    Narrow the return of `DocumentSnapshot.to_dict()` so it cannot be None.
+    Raises if the snapshot has no data (should not happen once `doc.exists`).
+    """
+    data = doc.to_dict()
+    if data is None:
+        raise ValueError(f"Firestore snapshot {doc.id} has no data")
+    return data
 
 
 # ── Timestamp helpers ─────────────────────────────────────────────
@@ -27,7 +56,7 @@ def _to_timestamp(ts: Timestamp) -> datetime:
 
 
 def _from_timestamp(dt: datetime) -> Timestamp:
-    return Timestamp(dt.astimezone(MADRID_TZ))
+    return Timestamp(dt.astimezone(get_app_timezone()))
 
 
 def _to_date_str(d: date | None) -> str | None:
@@ -40,7 +69,15 @@ def _from_date_str(s: str | None) -> date | None:
 
 # ── Space ─────────────────────────────────────────────────────────
 
-def space_to_dict(space: Space) -> dict:
+def _size_mapping_to_dict(mapping: SizeMapping | None) -> dict[str, int] | None:
+    return mapping.to_primitive() if mapping is not None else None
+
+
+def _size_mapping_from_dict(data: dict[str, int] | None) -> SizeMapping | None:
+    return SizeMapping.from_primitive(data) if data is not None else None
+
+
+def space_to_dict(space: Space) -> dict[str, Any]:
     return {
         "id": space.id.value,
         "name": space.name.value,
@@ -59,12 +96,13 @@ def space_to_dict(space: Space) -> dict:
             }
             for t in space.transitions
         ],
+        "size_mapping": _size_mapping_to_dict(space.size_mapping),
         "created_at": _to_timestamp(space.created_at),
         "updated_at": _to_timestamp(space.updated_at),
     }
 
 
-def space_from_dict(data: dict) -> Space:
+def space_from_dict(data: dict[str, Any]) -> Space:
     workflow_states = [
         WorkflowState(
             id=WorkflowStateId(s["id"]),
@@ -85,6 +123,7 @@ def space_from_dict(data: dict) -> Space:
         name=SpaceName(data["name"]),
         workflow_states=workflow_states,
         transitions=transitions,
+        size_mapping=_size_mapping_from_dict(data["size_mapping"]),
         created_at=_from_timestamp(data["created_at"]),
         updated_at=_from_timestamp(data["updated_at"]),
     )
@@ -92,7 +131,7 @@ def space_from_dict(data: dict) -> Space:
 
 # ── Card ──────────────────────────────────────────────────────────
 
-def card_to_dict(card: Card) -> dict:
+def card_to_dict(card: Card) -> dict[str, Any]:
     return {
         "id": card.id.value,
         "space_id": card.space_id.value,
@@ -110,12 +149,16 @@ def card_to_dict(card: Card) -> dict:
         "checklist": [{"text": i.text, "done": i.done} for i in card.checklist],
         "related_cards": [c.value for c in card.related_cards],
         "due_date": _to_date_str(card.due_date),
+        "size": card.size.value if card.size else None,
+        "actual_time": card.actual_time.value,
+        "timer_started_at": _to_timestamp(card.timer_started_at) if card.timer_started_at else None,
+        "completed_at": _to_timestamp(card.completed_at) if card.completed_at else None,
         "created_at": _to_timestamp(card.created_at),
         "updated_at": _to_timestamp(card.updated_at),
     }
 
 
-def card_from_dict(data: dict) -> Card:
+def card_from_dict(data: dict[str, Any]) -> Card:
     return Card(
         id=CardId(data["id"]),
         space_id=SpaceId(data["space_id"]),
@@ -136,6 +179,10 @@ def card_from_dict(data: dict) -> Card:
         ],
         related_cards=[CardId(c) for c in data.get("related_cards", [])],
         due_date=_from_date_str(data.get("due_date")),
+        size=CardSize(data["size"]) if data["size"] else None,
+        actual_time=Minutes(data["actual_time"]),
+        timer_started_at=_from_timestamp(data["timer_started_at"]) if data["timer_started_at"] else None,
+        completed_at=_from_timestamp(data["completed_at"]) if data["completed_at"] else None,
         created_at=_from_timestamp(data["created_at"]),
         updated_at=_from_timestamp(data["updated_at"]),
     )
@@ -143,7 +190,7 @@ def card_from_dict(data: dict) -> Card:
 
 # ── Area ──────────────────────────────────────────────────────────
 
-def area_to_dict(area: Area) -> dict:
+def area_to_dict(area: Area) -> dict[str, Any]:
     return {
         "id": area.id.value,
         "name": area.name,
@@ -155,7 +202,7 @@ def area_to_dict(area: Area) -> dict:
     }
 
 
-def area_from_dict(data: dict) -> Area:
+def area_from_dict(data: dict[str, Any]) -> Area:
     return Area(
         id=AreaId(data["id"]),
         name=data["name"],
@@ -169,7 +216,7 @@ def area_from_dict(data: dict) -> Area:
 
 # ── Project ───────────────────────────────────────────────────────
 
-def project_to_dict(project: Project) -> dict:
+def project_to_dict(project: Project) -> dict[str, Any]:
     return {
         "id": project.id.value,
         "name": project.name,
@@ -182,7 +229,7 @@ def project_to_dict(project: Project) -> dict:
     }
 
 
-def project_from_dict(data: dict) -> Project:
+def project_from_dict(data: dict[str, Any]) -> Project:
     return Project(
         id=ProjectId(data["id"]),
         name=data["name"],
@@ -197,7 +244,7 @@ def project_from_dict(data: dict) -> Project:
 
 # ── Epic ──────────────────────────────────────────────────────────
 
-def epic_to_dict(epic: Epic) -> dict:
+def epic_to_dict(epic: Epic) -> dict[str, Any]:
     return {
         "id": epic.id.value,
         "space_id": epic.space_id.value,
@@ -210,7 +257,7 @@ def epic_to_dict(epic: Epic) -> dict:
     }
 
 
-def epic_from_dict(data: dict) -> Epic:
+def epic_from_dict(data: dict[str, Any]) -> Epic:
     return Epic(
         id=EpicId(data["id"]),
         space_id=SpaceId(data["space_id"]),

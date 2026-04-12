@@ -1,11 +1,29 @@
 from datetime import date
 from dataclasses import dataclass, field
+from sigma_core.shared_kernel.enums import CardSize
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
-from sigma_core.task_management.domain.errors import DuplicateChecklistItemError
-from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, CardTitle, WorkflowStateId,
-    AreaId, ProjectId, EpicId, Timestamp, Url, ChecklistItem,
+from sigma_core.task_management.domain.errors import (
+    DuplicateChecklistItemError,
+    InvalidTimerClockError,
+    TimerAlreadyRunningError,
+    TimerNotRunningError,
 )
+from sigma_core.shared_kernel.value_objects import (
+    CardId,
+    SpaceId,
+    AreaId,
+    Timestamp,
+    Minutes,
+)
+from sigma_core.task_management.domain.value_objects import (
+    CardTitle,
+    WorkflowStateId,
+    ProjectId,
+    EpicId,
+    Url,
+    ChecklistItem,
+)
+from sigma_core.task_management.domain.aggregates.space import FINISH_STATE_ID
 
 
 @dataclass
@@ -26,6 +44,10 @@ class Card:
     urls: list[Url] = field(default_factory=list)
     checklist: list[ChecklistItem] = field(default_factory=list)
     related_cards: list[CardId] = field(default_factory=list)
+    size: CardSize | None = None
+    actual_time: Minutes = field(default_factory=lambda: Minutes(0))
+    timer_started_at: Timestamp | None = None
+    completed_at: Timestamp | None = None
     created_at: Timestamp = field(default_factory=Timestamp.now)
     updated_at: Timestamp = field(default_factory=Timestamp.now)
 
@@ -40,11 +62,17 @@ class Card:
     def move_to_workflow_state(self, state_id: WorkflowStateId) -> None:
         self.workflow_state_id = state_id
         self.pre_workflow_stage = None
-        self.updated_at = Timestamp.now()
+        now = Timestamp.now()
+        if state_id == FINISH_STATE_ID:
+            self.completed_at = now
+        else:
+            self.completed_at = None
+        self.updated_at = now
 
     def move_to_pre_workflow(self, stage: PreWorkflowStage) -> None:
         self.pre_workflow_stage = stage
         self.workflow_state_id = None
+        self.completed_at = None
         self.updated_at = Timestamp.now()
 
     def add_label(self, label: str) -> None:
@@ -106,4 +134,32 @@ class Card:
 
     def remove_related_card(self, card_id: CardId) -> None:
         self.related_cards = [c for c in self.related_cards if c != card_id]
+        self.updated_at = Timestamp.now()
+
+    def assign_size(self, size: CardSize | None) -> None:
+        self.size = size
+        self.updated_at = Timestamp.now()
+
+    def start_timer(self, now: Timestamp) -> None:
+        if self.timer_started_at is not None:
+            raise TimerAlreadyRunningError(
+                f"Card {self.id.value} ya tiene un timer corriendo"
+            )
+        self.timer_started_at = now
+        self.updated_at = Timestamp.now()
+
+    def stop_timer(self, now: Timestamp) -> None:
+        if self.timer_started_at is None:
+            raise TimerNotRunningError(
+                f"Card {self.id.value} has no timer running"
+            )
+        if now.value < self.timer_started_at.value:
+            raise InvalidTimerClockError(
+                f"Card {self.id.value}: now ({now.value.isoformat()}) cannot be "
+                f"earlier than timer_started_at ({self.timer_started_at.value.isoformat()})"
+            )
+        delta_seconds = (now.value - self.timer_started_at.value).total_seconds()
+        delta_minutes = int(delta_seconds // 60)
+        self.actual_time = self.actual_time + Minutes(delta_minutes)
+        self.timer_started_at = None
         self.updated_at = Timestamp.now()

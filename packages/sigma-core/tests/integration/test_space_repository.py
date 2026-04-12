@@ -1,6 +1,7 @@
 import pytest
 from sigma_core.task_management.domain.aggregates.space import Space
-from sigma_core.task_management.domain.value_objects import SpaceId, SpaceName
+from sigma_core.shared_kernel.value_objects import SpaceId
+from sigma_core.task_management.domain.value_objects import SpaceName
 from sigma_core.task_management.infrastructure.firestore.space_repository import (
     FirestoreSpaceRepository,
 )

@@ -1,5 +1,4 @@
-class SigmaDomainError(Exception):
-    """Base para todos los errores de dominio"""
+from sigma_core.shared_kernel.errors import SigmaDomainError
 
 
 class InvalidWorkflowError(SigmaDomainError):
@@ -60,3 +59,26 @@ class InboxNotAllowedError(SigmaDomainError):
 
 class AlreadyInStageError(SigmaDomainError):
     """Card is already in that stage."""
+
+
+class TimerAlreadyRunningError(SigmaDomainError):
+    """Card already has a timer running"""
+
+
+class TimerNotRunningError(SigmaDomainError):
+    """Card has no timer running to stop"""
+
+
+class InvalidTimerClockError(SigmaDomainError):
+    """Stop timer received a now timestamp earlier than timer_started_at"""
+
+
+class SpaceHasActiveTimerError(SigmaDomainError):
+    """Another card in the same Space already has an active timer"""
+
+    def __init__(self, space_id: str, active_card_id: str) -> None:
+        super().__init__(
+            f"Space {space_id} already has an active timer in card {active_card_id}"
+        )
+        self.space_id = space_id
+        self.active_card_id = active_card_id

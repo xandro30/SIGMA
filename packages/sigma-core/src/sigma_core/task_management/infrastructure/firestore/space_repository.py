@@ -1,9 +1,9 @@
 from google.cloud.firestore import AsyncClient
 
 from sigma_core.task_management.domain.aggregates.space import Space
-from sigma_core.task_management.domain.value_objects import SpaceId
+from sigma_core.shared_kernel.value_objects import SpaceId
 from sigma_core.task_management.infrastructure.firestore.mappers import (
-    space_to_dict, space_from_dict,
+    space_to_dict, space_from_dict, snapshot_data,
 )
 
 
@@ -21,11 +21,11 @@ class FirestoreSpaceRepository:
         doc = await self._client.collection(self.COLLECTION).document(space_id.value).get()
         if not doc.exists:
             return None
-        return space_from_dict(doc.to_dict())
+        return space_from_dict(snapshot_data(doc))
 
     async def get_all(self) -> list[Space]:
         docs = await self._client.collection(self.COLLECTION).get()
-        return [space_from_dict(doc.to_dict()) for doc in docs]
+        return [space_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def delete(self, space_id: SpaceId) -> None:
         await self._client.collection(self.COLLECTION).document(space_id.value).delete()

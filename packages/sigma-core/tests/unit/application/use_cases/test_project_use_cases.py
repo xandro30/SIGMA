@@ -2,8 +2,12 @@ import pytest
 from sigma_core.task_management.domain.entities.area import Area
 from sigma_core.task_management.domain.entities.project import Project
 from sigma_core.task_management.domain.enums import ProjectStatus
-from sigma_core.task_management.domain.errors import AreaNotFoundError, ProjectNotFoundError
-from sigma_core.task_management.domain.value_objects import AreaId, ProjectId
+from sigma_core.task_management.domain.errors import (
+    AreaNotFoundError,
+    ProjectNotFoundError,
+)
+from sigma_core.shared_kernel.value_objects import AreaId
+from sigma_core.task_management.domain.value_objects import ProjectId
 from sigma_core.task_management.application.use_cases.project.create_project import (
     CreateProject, CreateProjectCommand,
 )

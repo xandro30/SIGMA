@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from sigma_core.task_management.domain.errors import (
-    CardNotFoundError, EpicNotFoundError, InvalidEpicSpaceError,
+    CardNotFoundError,
+    EpicNotFoundError,
+    InvalidEpicSpaceError,
 )
-from sigma_core.task_management.domain.value_objects import CardId, EpicId
+from sigma_core.shared_kernel.value_objects import CardId
+from sigma_core.task_management.domain.value_objects import EpicId
 from sigma_core.task_management.domain.ports.card_repository import CardRepository
 from sigma_core.task_management.domain.ports.epic_repository import EpicRepository
 

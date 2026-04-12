@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from sigma_core.task_management.domain.errors import AreaNotFoundError
-from sigma_core.task_management.domain.value_objects import AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
 from sigma_core.task_management.domain.ports.area_repository import AreaRepository
 from sigma_core.task_management.domain.ports.card_repository import CardRepository
 from sigma_core.task_management.domain.ports.project_repository import ProjectRepository

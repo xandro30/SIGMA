@@ -18,6 +18,7 @@ def space_to_response(space: Space) -> SpaceResponse:
             {"from_id": t.from_id.value, "to_id": t.to_id.value}
             for t in space.transitions
         ],
+        size_mapping=space.size_mapping.to_primitive() if space.size_mapping is not None else None,
         created_at=space.created_at.value.isoformat(),
         updated_at=space.updated_at.value.isoformat(),
     )

@@ -20,6 +20,9 @@ def card_to_response(card: Card) -> CardResponse:
         checklist=[ChecklistItemResponse(text=i.text, done=i.done) for i in card.checklist],
         related_cards=[c.value for c in card.related_cards],
         due_date=card.due_date.isoformat() if card.due_date else None,
+        size=card.size.value if card.size else None,
+        actual_time=card.actual_time.value,
+        timer_started_at=card.timer_started_at.value.isoformat() if card.timer_started_at else None,
         created_at=card.created_at.value.isoformat(),
         updated_at=card.updated_at.value.isoformat(),
     )

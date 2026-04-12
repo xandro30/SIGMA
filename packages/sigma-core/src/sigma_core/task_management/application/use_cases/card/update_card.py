@@ -2,11 +2,13 @@ from dataclasses import dataclass, field
 from datetime import date
 from sigma_core.task_management.domain.enums import Priority
 from sigma_core.task_management.domain.errors import (
-    CardNotFoundError, AreaNotFoundError, EpicNotFoundError, InvalidEpicSpaceError,
+    CardNotFoundError,
+    AreaNotFoundError,
+    EpicNotFoundError,
+    InvalidEpicSpaceError,
 )
-from sigma_core.task_management.domain.value_objects import (
-    CardId, CardTitle, AreaId, EpicId,
-)
+from sigma_core.shared_kernel.value_objects import CardId, AreaId
+from sigma_core.task_management.domain.value_objects import CardTitle, EpicId
 from sigma_core.task_management.domain.ports.card_repository import CardRepository
 from sigma_core.task_management.domain.ports.area_repository import AreaRepository
 from sigma_core.task_management.domain.ports.epic_repository import EpicRepository

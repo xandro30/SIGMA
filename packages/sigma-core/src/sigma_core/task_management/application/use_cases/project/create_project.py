@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from sigma_core.task_management.domain.entities.project import Project
 from sigma_core.task_management.domain.enums import ProjectStatus
 from sigma_core.task_management.domain.errors import AreaNotFoundError
-from sigma_core.task_management.domain.value_objects import ProjectId, AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
+from sigma_core.task_management.domain.value_objects import ProjectId
 from sigma_core.task_management.domain.ports.project_repository import ProjectRepository
 from sigma_core.task_management.domain.ports.area_repository import AreaRepository
 

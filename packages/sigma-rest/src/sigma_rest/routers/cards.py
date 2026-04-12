@@ -1,11 +1,18 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Response
 
+from sigma_core.shared_kernel.value_objects import CardId, SpaceId, AreaId, Timestamp
 from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, CardTitle, WorkflowStateId,
-    AreaId, ProjectId, EpicId, Url, ChecklistItem,
+    CardTitle,
+    WorkflowStateId,
+    ProjectId,
+    EpicId,
+    Url,
+    ChecklistItem,
 )
+from sigma_core.shared_kernel.enums import CardSize
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
+from sigma_core.task_management.domain.errors import CardNotFoundError
 from sigma_core.task_management.application.use_cases.card.create_card import CreateCard, CreateCardCommand
 from sigma_core.task_management.application.use_cases.card.move_card import MoveCard, MoveCardCommand
 from sigma_core.task_management.application.use_cases.card.promote_to_workflow import PromoteToWorkflow, PromoteToWorkflowCommand
@@ -17,18 +24,28 @@ from sigma_core.task_management.application.use_cases.card.delete_card import De
 from sigma_core.task_management.application.use_cases.card.assign_area import AssignArea, AssignAreaCommand
 from sigma_core.task_management.application.use_cases.card.assign_project import AssignProject, AssignProjectCommand
 from sigma_core.task_management.application.use_cases.card.assign_epic import AssignEpic, AssignEpicCommand
+from sigma_core.task_management.application.use_cases.card.assign_size import AssignSize, AssignSizeCommand
+from sigma_core.task_management.application.use_cases.card.start_timer import StartTimer, StartTimerCommand
+from sigma_core.task_management.application.use_cases.card.stop_timer import StopTimer, StopTimerCommand
 
 from sigma_rest.schemas.card_schemas import (
     CreateCardRequest, UpdateCardRequest, MoveCardRequest,
     PromoteCardRequest, DemoteCardRequest, LabelActionRequest,
     TopicActionRequest, UrlActionRequest, AddChecklistItemRequest,
     AddRelatedCardRequest, AssignAreaRequest, AssignProjectRequest, AssignEpicRequest,
-    MoveTriageStageRequest, CardResponse,
+    AssignSizeRequest, MoveTriageStageRequest, CardResponse,
 )
 from sigma_rest.mappers.card_mappers import card_to_response
 from sigma_rest.dependencies import get_card_repo, get_space_repo, get_area_repo, get_project_repo, get_epic_repo
 
 router = APIRouter(tags=["cards"])
+
+
+async def _get_card_or_raise(card_repo, card_id: CardId):
+    card = await card_repo.get_by_id(card_id)
+    if card is None:
+        raise CardNotFoundError(f"Card {card_id.value} not found")
+    return card
 
 
 @router.get("/spaces/{space_id}/cards")
@@ -323,4 +340,47 @@ async def assign_epic(
         epic_id=EpicId(body.epic_id) if body.epic_id else None,
     ))
     card = await card_repo.get_by_id(CardId(card_id))
+    return card_to_response(card)
+
+
+@router.patch("/cards/{card_id}/size", response_model=CardResponse)
+async def assign_size(
+    card_id: str,
+    body: AssignSizeRequest,
+    card_repo=Depends(get_card_repo),
+):
+    use_case = AssignSize(card_repo)
+    await use_case.execute(AssignSizeCommand(
+        card_id=CardId(card_id),
+        size=CardSize(body.size) if body.size else None,
+    ))
+    card = await _get_card_or_raise(card_repo, CardId(card_id))
+    return card_to_response(card)
+
+
+@router.post("/cards/{card_id}/timer/start", response_model=CardResponse)
+async def start_timer(
+    card_id: str,
+    card_repo=Depends(get_card_repo),
+):
+    use_case = StartTimer(card_repo)
+    await use_case.execute(StartTimerCommand(
+        card_id=CardId(card_id),
+        now=Timestamp.now(),
+    ))
+    card = await _get_card_or_raise(card_repo, CardId(card_id))
+    return card_to_response(card)
+
+
+@router.post("/cards/{card_id}/timer/stop", response_model=CardResponse)
+async def stop_timer(
+    card_id: str,
+    card_repo=Depends(get_card_repo),
+):
+    use_case = StopTimer(card_repo)
+    await use_case.execute(StopTimerCommand(
+        card_id=CardId(card_id),
+        now=Timestamp.now(),
+    ))
+    card = await _get_card_or_raise(card_repo, CardId(card_id))
     return card_to_response(card)

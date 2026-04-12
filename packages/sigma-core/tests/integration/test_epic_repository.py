@@ -1,6 +1,7 @@
 import pytest
 from sigma_core.task_management.domain.entities.epic import Epic
-from sigma_core.task_management.domain.value_objects import EpicId, SpaceId, ProjectId, AreaId
+from sigma_core.shared_kernel.value_objects import SpaceId, AreaId
+from sigma_core.task_management.domain.value_objects import EpicId, ProjectId
 from sigma_core.task_management.infrastructure.firestore.epic_repository import FirestoreEpicRepository
 
 

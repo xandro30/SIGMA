@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 from sigma_core.task_management.domain.enums import ProjectStatus
-from sigma_core.task_management.domain.value_objects import (
-    ProjectId, AreaId, Timestamp,
-)
+from sigma_core.shared_kernel.value_objects import AreaId, Timestamp
+from sigma_core.task_management.domain.value_objects import ProjectId
 
 
 @dataclass

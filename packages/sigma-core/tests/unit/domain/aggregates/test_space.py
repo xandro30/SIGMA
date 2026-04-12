@@ -1,8 +1,12 @@
 import pytest
 
 from sigma_core.task_management.domain.aggregates.space import Space, BEGIN_STATE_ID, FINISH_STATE_ID, WorkflowState, Transition, WorkflowStateId
-from sigma_core.task_management.domain.errors import InvalidWorkflowError, DuplicateStateError
-from sigma_core.task_management.domain.value_objects import SpaceId, SpaceName
+from sigma_core.task_management.domain.errors import (
+    InvalidWorkflowError,
+    DuplicateStateError,
+)
+from sigma_core.shared_kernel.value_objects import SpaceId, SizeMapping
+from sigma_core.task_management.domain.value_objects import SpaceName
 
 
 def test_space_create_with_valid_name():
@@ -98,3 +102,29 @@ def test_remove_state_also_removes_its_transitions():
     space.remove_state(in_progress_id)
 
     assert len(space.transitions) == 0
+
+
+# ── SizeMapping ──────────────────────────────────────────────────
+
+def test_space_size_mapping_es_none_por_defecto():
+    space = Space(id=SpaceId.generate(), name=SpaceName("Work"))
+
+    assert space.size_mapping is None
+
+
+def test_space_set_size_mapping_establece_el_mapping():
+    space = Space(id=SpaceId.generate(), name=SpaceName("Work"))
+    mapping = SizeMapping.default()
+
+    space.set_size_mapping(mapping)
+
+    assert space.size_mapping == mapping
+
+
+def test_space_set_size_mapping_none_limpia_el_mapping():
+    space = Space(id=SpaceId.generate(), name=SpaceName("Work"))
+    space.set_size_mapping(SizeMapping.default())
+
+    space.set_size_mapping(None)
+
+    assert space.size_mapping is None

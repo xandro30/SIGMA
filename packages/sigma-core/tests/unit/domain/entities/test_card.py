@@ -1,12 +1,42 @@
 import pytest
 
-from sigma_core.task_management.domain.errors import DuplicateChecklistItemError
+from sigma_core.task_management.domain.errors import (
+    DuplicateChecklistItemError,
+    InvalidTimerClockError,
+    TimerAlreadyRunningError,
+    TimerNotRunningError,
+)
 from sigma_core.task_management.domain.aggregates.space import WorkflowStateId
 from sigma_core.task_management.domain.aggregates.card import Card
+from sigma_core.shared_kernel.enums import CardSize
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
-from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, CardTitle, Timestamp, ChecklistItem, Url, EpicId, ProjectId, AreaId
+from sigma_core.shared_kernel.value_objects import (
+    CardId,
+    SpaceId,
+    Timestamp,
+    AreaId,
+    Minutes,
 )
+from sigma_core.task_management.domain.value_objects import (
+    CardTitle,
+    ChecklistItem,
+    Url,
+    EpicId,
+    ProjectId,
+)
+from tests.helpers.timestamps import ts as _ts
+
+
+def _make_card() -> Card:
+    return Card(
+        id=CardId.generate(),
+        space_id=SpaceId.generate(),
+        title=CardTitle("Test card"),
+        pre_workflow_stage=PreWorkflowStage.INBOX,
+        workflow_state_id=None,
+        created_at=Timestamp.now(),
+        updated_at=Timestamp.now(),
+    )
 
 
 def test_card_default_state():
@@ -217,26 +247,6 @@ def test_remove_label_removes_label_from_card():
     card.remove_label("#SecOps")
 
     assert "#SecOps" not in card.labels
-
-
-def test_add_and_remove_topic():
-    card = Card(
-        id=CardId.generate(),
-        space_id=SpaceId.generate(),
-        title=CardTitle("Tarea"),
-        pre_workflow_stage=PreWorkflowStage.INBOX,
-        workflow_state_id=None,
-        created_at=Timestamp.now(),
-        updated_at=Timestamp.now(),
-    )
-
-    card.add_topic("IAM")
-
-    assert "IAM" in card.topics
-
-    card.remove_topic("IAM")
-
-    assert "IAM" not in card.topics
 
 
 # ── Labels & Topics ───────────────────────────────────────────────
@@ -455,3 +465,120 @@ def test_remove_related_card_removes_card_id():
     card.remove_related_card(related_id)
 
     assert related_id not in card.related_cards
+
+
+# ── Size ──────────────────────────────────────────────────────────
+
+def test_card_size_es_none_por_defecto():
+    card = _make_card()
+
+    assert card.size is None
+
+
+def test_card_assign_size_establece_el_tamaño():
+    card = _make_card()
+
+    card.assign_size(CardSize.M)
+
+    assert card.size == CardSize.M
+
+
+def test_card_assign_size_none_limpia_el_tamaño():
+    card = _make_card()
+    card.assign_size(CardSize.L)
+
+    card.assign_size(None)
+
+    assert card.size is None
+
+
+def test_card_assign_size_sobreescribe_tamaño_anterior():
+    card = _make_card()
+    card.assign_size(CardSize.S)
+
+    card.assign_size(CardSize.XL)
+
+    assert card.size == CardSize.XL
+
+
+# ── Timer ─────────────────────────────────────────────────────────
+
+def test_card_actual_time_es_cero_por_defecto():
+    card = _make_card()
+
+    assert card.actual_time == Minutes(0)
+
+
+def test_card_timer_started_at_es_none_por_defecto():
+    card = _make_card()
+
+    assert card.timer_started_at is None
+
+
+def test_card_start_timer_establece_timestamp():
+    card = _make_card()
+    now = _ts(2026, 1, 1, 10, 0)
+
+    card.start_timer(now)
+
+    assert card.timer_started_at == now
+
+
+def test_card_start_timer_cuando_ya_hay_timer_lanza_error():
+    card = _make_card()
+    card.start_timer(_ts(2026, 1, 1, 10, 0))
+
+    with pytest.raises(TimerAlreadyRunningError):
+        card.start_timer(_ts(2026, 1, 1, 11, 0))
+
+
+def test_card_stop_timer_acumula_en_actual_time():
+    card = _make_card()
+    card.start_timer(_ts(2026, 1, 1, 10, 0))
+
+    card.stop_timer(_ts(2026, 1, 1, 10, 30))
+
+    assert card.actual_time == Minutes(30)
+    assert card.timer_started_at is None
+
+
+def test_card_stop_timer_sin_timer_corriendo_lanza_error():
+    card = _make_card()
+
+    with pytest.raises(TimerNotRunningError):
+        card.stop_timer(_ts(2026, 1, 1, 10, 0))
+
+
+def test_card_stop_timer_acumula_sobre_sesiones_previas():
+    card = _make_card()
+    card.start_timer(_ts(2026, 1, 1, 10, 0))
+    card.stop_timer(_ts(2026, 1, 1, 10, 30))
+
+    card.start_timer(_ts(2026, 1, 1, 11, 0))
+    card.stop_timer(_ts(2026, 1, 1, 11, 15))
+
+    assert card.actual_time == Minutes(45)
+    assert card.timer_started_at is None
+
+
+def test_card_stop_timer_con_now_anterior_a_started_at_lanza_error():
+    card = _make_card()
+    card.start_timer(_ts(2026, 1, 1, 10, 0))
+
+    with pytest.raises(InvalidTimerClockError):
+        card.stop_timer(_ts(2026, 1, 1, 9, 0))
+
+
+def test_card_stop_timer_con_now_anterior_no_muta_estado():
+    card = _make_card()
+    started_at = _ts(2026, 1, 1, 10, 0)
+    card.start_timer(started_at)
+    previous_actual_time = card.actual_time
+
+    try:
+        card.stop_timer(_ts(2026, 1, 1, 9, 0))
+    except InvalidTimerClockError:
+        pass
+
+    assert card.timer_started_at == started_at
+    assert card.actual_time == previous_actual_time

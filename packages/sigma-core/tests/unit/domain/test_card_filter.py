@@ -1,9 +1,8 @@
 from datetime import date
 
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
-from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, CardTitle,
-)
+from sigma_core.shared_kernel.value_objects import CardId, SpaceId
+from sigma_core.task_management.domain.value_objects import CardTitle
 
 from sigma_core.task_management.domain.aggregates.card import Card
 from sigma_core.task_management.domain.card_filter import (

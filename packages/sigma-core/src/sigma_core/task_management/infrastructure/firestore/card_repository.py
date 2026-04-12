@@ -4,11 +4,14 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from sigma_core.task_management.domain.aggregates.card import Card
 from sigma_core.task_management.domain.card_filter import CardFilter
 from sigma_core.task_management.domain.enums import PreWorkflowStage
+from sigma_core.shared_kernel.value_objects import CardId, SpaceId, AreaId
 from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, AreaId, ProjectId, EpicId, WorkflowStateId,
+    ProjectId,
+    EpicId,
+    WorkflowStateId,
 )
 from sigma_core.task_management.infrastructure.firestore.mappers import (
-    card_to_dict, card_from_dict,
+    card_to_dict, card_from_dict, snapshot_data,
 )
 
 
@@ -34,6 +37,10 @@ class FirestoreCardRepository:
     def _state_key(self, card: Card) -> str:
         if card.pre_workflow_stage:
             return card.pre_workflow_stage.value
+        if card.workflow_state_id is None:
+            raise ValueError(
+                f"Card {card.id.value} has neither pre_workflow_stage nor workflow_state_id"
+            )
         return card.workflow_state_id.value
 
     async def save(self, card: Card) -> None:
@@ -74,7 +81,7 @@ class FirestoreCardRepository:
         doc = await self._card_ref(card_id.value).get()
         if not doc.exists:
             return None
-        return card_from_dict(doc.to_dict())
+        return card_from_dict(snapshot_data(doc))
 
     async def get_by_space(
         self,
@@ -83,7 +90,7 @@ class FirestoreCardRepository:
     ) -> list[Card]:
         query = self._client.collection(self.COLLECTION).where(filter=FieldFilter("space_id", "==", space_id.value))
         docs = await query.get()
-        cards = [card_from_dict(doc.to_dict()) for doc in docs]
+        cards = [card_from_dict(snapshot_data(doc)) for doc in docs]
         if filter:
             cards = [c for c in cards if filter.matches(c)]
         return cards
@@ -99,7 +106,7 @@ class FirestoreCardRepository:
             .where(filter=FieldFilter("pre_workflow_stage", "==", stage.value))
             .get()
         )
-        return [card_from_dict(doc.to_dict()) for doc in docs]
+        return [card_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def get_by_workflow_state(
         self,
@@ -112,7 +119,7 @@ class FirestoreCardRepository:
             .where(filter=FieldFilter("workflow_state_id", "==", state_id.value))
             .get()
         )
-        return [card_from_dict(doc.to_dict()) for doc in docs]
+        return [card_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def count_by_workflow_state(
         self,
@@ -139,7 +146,7 @@ class FirestoreCardRepository:
             .where(filter=FieldFilter("area_id", "==", area_id.value))
             .get()
         )
-        return [card_from_dict(doc.to_dict()) for doc in docs]
+        return [card_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def get_by_project(self, project_id: ProjectId) -> list[Card]:
         docs = await (
@@ -147,7 +154,7 @@ class FirestoreCardRepository:
             .where(filter=FieldFilter("project_id", "==", project_id.value))
             .get()
         )
-        return [card_from_dict(doc.to_dict()) for doc in docs]
+        return [card_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def get_by_epic(self, epic_id: EpicId) -> list[Card]:
         docs = await (
@@ -155,7 +162,7 @@ class FirestoreCardRepository:
             .where(filter=FieldFilter("epic_id", "==", epic_id.value))
             .get()
         )
-        return [card_from_dict(doc.to_dict()) for doc in docs]
+        return [card_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def delete(self, card_id: CardId) -> None:
         await self._card_ref(card_id.value).delete()

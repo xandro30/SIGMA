@@ -2,7 +2,8 @@ import pytest
 
 from sigma_core.task_management.domain.entities.project import Project
 from sigma_core.task_management.domain.enums import ProjectStatus
-from sigma_core.task_management.domain.value_objects import ProjectId, AreaId, Timestamp
+from sigma_core.shared_kernel.value_objects import AreaId, Timestamp
+from sigma_core.task_management.domain.value_objects import ProjectId
 
 
 def test_project_is_created_correctly():

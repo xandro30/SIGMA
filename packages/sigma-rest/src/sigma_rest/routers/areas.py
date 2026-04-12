@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Response
 
-from sigma_core.task_management.domain.value_objects import AreaId
+from sigma_core.shared_kernel.value_objects import AreaId
 from sigma_core.task_management.application.use_cases.area.create_area import CreateArea, CreateAreaCommand
 from sigma_core.task_management.application.use_cases.area.update_area import UpdateArea, UpdateAreaCommand
 from sigma_core.task_management.application.use_cases.area.delete_area import DeleteArea, DeleteAreaCommand

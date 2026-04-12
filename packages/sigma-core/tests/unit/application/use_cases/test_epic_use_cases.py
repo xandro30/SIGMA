@@ -3,8 +3,12 @@ from sigma_core.task_management.domain.entities.area import Area
 from sigma_core.task_management.domain.entities.epic import Epic
 from sigma_core.task_management.domain.entities.project import Project
 from sigma_core.task_management.domain.enums import ProjectStatus
-from sigma_core.task_management.domain.errors import ProjectNotFoundError, EpicNotFoundError
-from sigma_core.task_management.domain.value_objects import AreaId, ProjectId, EpicId, SpaceId
+from sigma_core.task_management.domain.errors import (
+    ProjectNotFoundError,
+    EpicNotFoundError,
+)
+from sigma_core.shared_kernel.value_objects import AreaId, SpaceId
+from sigma_core.task_management.domain.value_objects import ProjectId, EpicId
 from sigma_core.task_management.application.use_cases.epic.create_epic import (
     CreateEpic, CreateEpicCommand,
 )

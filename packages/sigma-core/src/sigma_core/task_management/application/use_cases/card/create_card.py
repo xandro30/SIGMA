@@ -2,8 +2,12 @@ from dataclasses import dataclass, field
 from sigma_core.task_management.domain.aggregates.card import Card
 from sigma_core.task_management.domain.enums import PreWorkflowStage, Priority
 from sigma_core.task_management.domain.errors import SpaceNotFoundError
+from sigma_core.shared_kernel.value_objects import CardId, SpaceId, AreaId
 from sigma_core.task_management.domain.value_objects import (
-    CardId, SpaceId, CardTitle, WorkflowStateId, AreaId, ProjectId, EpicId,
+    CardTitle,
+    WorkflowStateId,
+    ProjectId,
+    EpicId,
 )
 from sigma_core.task_management.domain.ports.card_repository import CardRepository
 from sigma_core.task_management.domain.ports.space_repository import SpaceRepository

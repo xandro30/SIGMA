@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 
-from sigma_core.task_management.domain.value_objects import SpaceId, EpicId, ProjectId
+from sigma_core.shared_kernel.value_objects import SpaceId
+from sigma_core.task_management.domain.value_objects import EpicId, ProjectId
 from sigma_core.task_management.application.use_cases.epic.create_epic import CreateEpic, CreateEpicCommand
 from sigma_core.task_management.application.use_cases.epic.update_epic import UpdateEpic, UpdateEpicCommand
 from sigma_core.task_management.application.use_cases.epic.delete_epic import DeleteEpic, DeleteEpicCommand

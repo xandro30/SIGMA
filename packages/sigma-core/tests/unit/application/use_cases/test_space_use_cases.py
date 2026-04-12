@@ -3,7 +3,8 @@ from sigma_core.task_management.domain.aggregates.space import (
     Space, WorkflowState, BEGIN_STATE_ID, FINISH_STATE_ID,
 )
 from sigma_core.task_management.domain.errors import SpaceNotFoundError
-from sigma_core.task_management.domain.value_objects import SpaceId, SpaceName, WorkflowStateId
+from sigma_core.shared_kernel.value_objects import SpaceId
+from sigma_core.task_management.domain.value_objects import SpaceName, WorkflowStateId
 from sigma_core.task_management.application.use_cases.space.create_space import (
     CreateSpace, CreateSpaceCommand,
 )

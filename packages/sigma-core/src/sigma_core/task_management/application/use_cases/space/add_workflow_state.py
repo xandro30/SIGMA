@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from sigma_core.task_management.domain.aggregates.space import WorkflowState
 from sigma_core.task_management.domain.errors import SpaceNotFoundError
-from sigma_core.task_management.domain.value_objects import SpaceId, WorkflowStateId
+from sigma_core.shared_kernel.value_objects import SpaceId
+from sigma_core.task_management.domain.value_objects import WorkflowStateId
 from sigma_core.task_management.domain.ports.space_repository import SpaceRepository
 
 

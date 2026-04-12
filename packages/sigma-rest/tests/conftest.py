@@ -2,12 +2,83 @@ import pytest
 import pytest_asyncio
 import httpx
 from sigma_rest.main import app
-from sigma_rest.dependencies import get_card_repo, get_space_repo
+from sigma_rest.dependencies import (
+    get_card_reader,
+    get_card_repo,
+    get_cycle_repo,
+    get_day_repo,
+    get_day_template_repo,
+    get_space_reader,
+    get_space_repo,
+    get_week_repo,
+    get_week_template_repo,
+)
+from sigma_core.planning.domain.read_models.card_view import CardView
+from sigma_core.planning.domain.read_models.space_view import SpaceView
+from sigma_core.planning.domain.value_objects import DateRange
 from sigma_core.task_management.domain.aggregates.card import Card
-from sigma_core.task_management.domain.value_objects import CardId, SpaceId, CardTitle, WorkflowStateId
+from sigma_core.shared_kernel.value_objects import CardId, SpaceId
+from sigma_core.task_management.domain.value_objects import CardTitle, WorkflowStateId
 from sigma_core.task_management.domain.enums import PreWorkflowStage
 from fakes.fake_card_repository import FakeCardRepository    # type: ignore[import]  # resolved via pytest pythonpath
 from fakes.fake_space_repository import FakeSpaceRepository  # type: ignore[import]
+from fakes.fake_cycle_repository import FakeCycleRepository  # type: ignore[import]
+from fakes.fake_day_repository import FakeDayRepository  # type: ignore[import]
+from fakes.fake_day_template_repository import FakeDayTemplateRepository  # type: ignore[import]
+from fakes.fake_week_repository import FakeWeekRepository  # type: ignore[import]
+from fakes.fake_week_template_repository import FakeWeekTemplateRepository  # type: ignore[import]
+
+
+class _RepoBackedCardReader:
+    """Adapter que proyecta un FakeCardRepository a CardView.
+
+    Permite que los tests de integración populen datos vía ``card_repo``
+    mientras el router consume el puerto ``CardReader``.
+    """
+
+    def __init__(self, repo: FakeCardRepository) -> None:
+        self._repo = repo
+
+    async def get_by_id(self, card_id: CardId) -> CardView | None:
+        card = await self._repo.get_by_id(card_id)
+        if card is None:
+            return None
+        return _project_card(card)
+
+    async def list_completed_in_range(
+        self, space_id: SpaceId, date_range: DateRange
+    ) -> list[CardView]:
+        cards = await self._repo.get_by_space(space_id)
+        result: list[CardView] = []
+        for card in cards:
+            if card.completed_at is None:
+                continue
+            if not date_range.contains(card.completed_at.value.date()):
+                continue
+            result.append(_project_card(card))
+        return result
+
+
+class _RepoBackedSpaceReader:
+    def __init__(self, repo: FakeSpaceRepository) -> None:
+        self._repo = repo
+
+    async def get_by_id(self, space_id: SpaceId) -> SpaceView | None:
+        space = await self._repo.get_by_id(space_id)
+        if space is None:
+            return None
+        return SpaceView(id=space.id, size_mapping=space.size_mapping)
+
+
+def _project_card(card: Card) -> CardView:
+    return CardView(
+        id=card.id,
+        space_id=card.space_id,
+        area_id=card.area_id,
+        size=card.size,
+        actual_time=card.actual_time,
+        completed_at=card.completed_at,
+    )
 
 
 @pytest.fixture
@@ -20,10 +91,62 @@ def space_repo():
     return FakeSpaceRepository()
 
 
+@pytest.fixture
+def cycle_repo():
+    return FakeCycleRepository()
+
+
+@pytest.fixture
+def day_repo():
+    return FakeDayRepository()
+
+
+@pytest.fixture
+def day_template_repo():
+    return FakeDayTemplateRepository()
+
+
+@pytest.fixture
+def week_template_repo():
+    return FakeWeekTemplateRepository()
+
+
+@pytest.fixture
+def week_repo():
+    return FakeWeekRepository()
+
+
+@pytest.fixture
+def card_reader(card_repo):
+    return _RepoBackedCardReader(card_repo)
+
+
+@pytest.fixture
+def space_reader(space_repo):
+    return _RepoBackedSpaceReader(space_repo)
+
+
 @pytest_asyncio.fixture
-async def client(card_repo, space_repo):
+async def client(
+    card_repo,
+    space_repo,
+    cycle_repo,
+    day_repo,
+    day_template_repo,
+    week_template_repo,
+    week_repo,
+    card_reader,
+    space_reader,
+):
     app.dependency_overrides[get_card_repo]  = lambda: card_repo
     app.dependency_overrides[get_space_repo] = lambda: space_repo
+    app.dependency_overrides[get_cycle_repo] = lambda: cycle_repo
+    app.dependency_overrides[get_day_repo] = lambda: day_repo
+    app.dependency_overrides[get_day_template_repo] = lambda: day_template_repo
+    app.dependency_overrides[get_week_template_repo] = lambda: week_template_repo
+    app.dependency_overrides[get_week_repo] = lambda: week_repo
+    app.dependency_overrides[get_card_reader] = lambda: card_reader
+    app.dependency_overrides[get_space_reader] = lambda: space_reader
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
         base_url="http://test",

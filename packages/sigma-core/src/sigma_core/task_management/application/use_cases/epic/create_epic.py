@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from sigma_core.task_management.domain.entities.epic import Epic
 from sigma_core.task_management.domain.errors import ProjectNotFoundError
-from sigma_core.task_management.domain.value_objects import EpicId, SpaceId, ProjectId
+from sigma_core.shared_kernel.value_objects import SpaceId
+from sigma_core.task_management.domain.value_objects import EpicId, ProjectId
 from sigma_core.task_management.domain.ports.epic_repository import EpicRepository
 from sigma_core.task_management.domain.ports.project_repository import ProjectRepository
 
