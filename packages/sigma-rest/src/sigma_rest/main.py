@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sigma_core.metrics.domain.errors import MetricsDomainError
 from sigma_core.planning.domain.errors import PlanningDomainError
 from sigma_core.shared_kernel.errors import SigmaDomainError
 from sigma_rest.config import get_cors_origins
 from sigma_rest.error_handlers import (
     domain_error_handler,
+    metrics_domain_error_handler,
     planning_domain_error_handler,
 )
 from sigma_rest.routers import (
@@ -14,6 +16,7 @@ from sigma_rest.routers import (
     day_templates,
     days,
     epics,
+    metrics,
     planning_queries,
     projects,
     spaces,
@@ -35,6 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_exception_handler(MetricsDomainError, metrics_domain_error_handler)
 app.add_exception_handler(PlanningDomainError, planning_domain_error_handler)
 app.add_exception_handler(SigmaDomainError, domain_error_handler)
 
@@ -48,6 +52,7 @@ app.include_router(days.router, prefix="/v1")
 app.include_router(day_templates.router, prefix="/v1")
 app.include_router(week_templates.router, prefix="/v1")
 app.include_router(weeks.router, prefix="/v1")
+app.include_router(metrics.router, prefix="/v1")
 app.include_router(planning_queries.router, prefix="/v1")
 
 

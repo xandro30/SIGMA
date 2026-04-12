@@ -31,7 +31,7 @@ from sigma_core.planning.application.use_cases.cycle.set_buffer_percentage impor
 from sigma_core.planning.domain.errors import CycleNotFoundError
 from sigma_core.planning.domain.value_objects import CycleId, DateRange
 from sigma_core.shared_kernel.value_objects import AreaId, Minutes, SpaceId, Timestamp
-from sigma_rest.dependencies import get_cycle_repo
+from sigma_rest.dependencies import get_cycle_repo, get_event_bus
 from sigma_rest.mappers.cycle_mappers import cycle_to_response
 from sigma_rest.routers._helpers import require_cycle
 from sigma_rest.schemas.cycle_schemas import (
@@ -108,8 +108,9 @@ async def close_cycle(
     space_id: str,
     cycle_id: str,
     cycle_repo=Depends(get_cycle_repo),
+    event_bus=Depends(get_event_bus),
 ):
-    use_case = CloseCycle(cycle_repo)
+    use_case = CloseCycle(cycle_repo, event_bus)
     await use_case.execute(
         CloseCycleCommand(cycle_id=CycleId(cycle_id), now=Timestamp.now())
     )

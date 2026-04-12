@@ -1,5 +1,7 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from sigma_core.metrics.application.error_handlers import handle_metrics_error
+from sigma_core.metrics.domain.errors import MetricsDomainError
 from sigma_core.planning.application.error_handlers import (
     handle_planning_error,
 )
@@ -43,6 +45,26 @@ async def planning_domain_error_handler(
             f"got {type(exc).__name__}"
         )
     result = handle_planning_error(exc)
+    return JSONResponse(
+        status_code=result.status_code,
+        content={
+            "error": result.code,
+            "message": result.message,
+            "detail": result.detail,
+        },
+    )
+
+
+async def metrics_domain_error_handler(
+    request: Request, exc: Exception
+) -> JSONResponse:
+    """Handler para errores del BC metrics."""
+    if not isinstance(exc, MetricsDomainError):
+        raise TypeError(
+            "metrics_domain_error_handler expects MetricsDomainError, "
+            f"got {type(exc).__name__}"
+        )
+    result = handle_metrics_error(exc)
     return JSONResponse(
         status_code=result.status_code,
         content={

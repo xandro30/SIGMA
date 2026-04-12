@@ -39,6 +39,7 @@ from sigma_core.planning.domain.errors import (
     InvalidCycleTransitionError,
 )
 from sigma_core.planning.domain.value_objects import CycleId, DateRange
+from sigma_core.shared_kernel.events import DomainEvent, InProcessEventBus
 from sigma_core.shared_kernel.value_objects import AreaId, Minutes, SpaceId, Timestamp
 
 
@@ -190,7 +191,7 @@ async def test_close_cycle_cierra_ciclo_activo():
     repo = FakeCycleRepository()
     cycle = _seed_draft_cycle(repo, SpaceId.generate())
     cycle.activate()
-    uc = CloseCycle(cycle_repo=repo)
+    uc = CloseCycle(cycle_repo=repo, event_bus=InProcessEventBus())
 
     await uc.execute(CloseCycleCommand(cycle_id=cycle.id, now=ts()))
 
@@ -204,7 +205,7 @@ async def test_close_cycle_cierra_ciclo_activo():
 async def test_close_cycle_cierra_ciclo_draft():
     repo = FakeCycleRepository()
     cycle = _seed_draft_cycle(repo, SpaceId.generate())
-    uc = CloseCycle(cycle_repo=repo)
+    uc = CloseCycle(cycle_repo=repo, event_bus=InProcessEventBus())
 
     await uc.execute(CloseCycleCommand(cycle_id=cycle.id, now=ts()))
 
@@ -216,10 +217,34 @@ async def test_close_cycle_cierra_ciclo_draft():
 @pytest.mark.asyncio
 async def test_close_cycle_falla_si_no_existe():
     repo = FakeCycleRepository()
-    uc = CloseCycle(cycle_repo=repo)
+    uc = CloseCycle(cycle_repo=repo, event_bus=InProcessEventBus())
 
     with pytest.raises(CycleNotFoundError):
         await uc.execute(CloseCycleCommand(cycle_id=CycleId.generate(), now=ts()))
+
+
+@pytest.mark.asyncio
+async def test_close_cycle_despacha_cycle_closed_event():
+    from sigma_core.shared_kernel.events import CycleClosed
+
+    repo = FakeCycleRepository()
+    cycle = _seed_draft_cycle(repo, SpaceId.generate())
+    cycle.activate()
+    received: list[DomainEvent] = []
+
+    async def capture(event):
+        received.append(event)
+
+    bus = InProcessEventBus()
+    bus.subscribe(CycleClosed, capture)
+    uc = CloseCycle(cycle_repo=repo, event_bus=bus)
+
+    await uc.execute(CloseCycleCommand(cycle_id=cycle.id, now=ts()))
+
+    assert len(received) == 1
+    assert isinstance(received[0], CycleClosed)
+    assert received[0].cycle_id == cycle.id
+    assert received[0].space_id == cycle.space_id
 
 
 # ── DeleteCycle ──────────────────────────────────────────────────

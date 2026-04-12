@@ -153,6 +153,7 @@ def card_to_dict(card: Card) -> dict[str, Any]:
         "actual_time": card.actual_time.value,
         "timer_started_at": _to_timestamp(card.timer_started_at) if card.timer_started_at else None,
         "completed_at": _to_timestamp(card.completed_at) if card.completed_at else None,
+        "entered_workflow_at": _to_timestamp(card.entered_workflow_at) if card.entered_workflow_at else None,
         "created_at": _to_timestamp(card.created_at),
         "updated_at": _to_timestamp(card.updated_at),
     }
@@ -183,6 +184,7 @@ def card_from_dict(data: dict[str, Any]) -> Card:
         actual_time=Minutes(data["actual_time"]),
         timer_started_at=_from_timestamp(data["timer_started_at"]) if data["timer_started_at"] else None,
         completed_at=_from_timestamp(data["completed_at"]) if data["completed_at"] else None,
+        entered_workflow_at=_from_timestamp(data["entered_workflow_at"]) if data["entered_workflow_at"] else None,
         created_at=_from_timestamp(data["created_at"]),
         updated_at=_from_timestamp(data["updated_at"]),
     )

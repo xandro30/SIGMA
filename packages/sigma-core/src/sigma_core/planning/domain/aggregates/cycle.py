@@ -9,6 +9,8 @@ from sigma_core.planning.domain.errors import (
     InvalidCycleTransitionError,
 )
 from sigma_core.planning.domain.value_objects import CycleId, DateRange
+from sigma_core.shared_kernel.aggregate import EventEmitterMixin
+from sigma_core.shared_kernel.events import CycleClosed
 from sigma_core.shared_kernel.value_objects import AreaId, Minutes, SpaceId, Timestamp
 
 
@@ -18,7 +20,7 @@ DEFAULT_BUFFER_PERCENTAGE = 20
 
 
 @dataclass
-class Cycle:
+class Cycle(EventEmitterMixin):
     id: CycleId
     space_id: SpaceId
     name: str
@@ -29,6 +31,9 @@ class Cycle:
     created_at: Timestamp = field(default_factory=Timestamp.now)
     updated_at: Timestamp = field(default_factory=Timestamp.now)
     closed_at: Timestamp | None = None
+
+    def __post_init__(self) -> None:
+        self._pending_events = []
 
     # ── State machine ──────────────────────────────────────────
 
@@ -50,6 +55,14 @@ class Cycle:
         self.state = CycleState.CLOSED
         self.closed_at = now
         self._touch()
+        self._record_event(
+            CycleClosed(
+                occurred_at=now,
+                cycle_id=self.id,
+                space_id=self.space_id,
+                date_range=self.date_range,
+            )
+        )
 
     # ── Area budgets ───────────────────────────────────────────
 

@@ -26,6 +26,7 @@ def _make_card(
     actual_time: Minutes | None = None,
     timer_started_at: Timestamp | None = None,
     completed_at: Timestamp | None = None,
+    entered_workflow_at: Timestamp | None = None,
 ) -> Card:
     return Card(
         id=CardId.generate(),
@@ -37,6 +38,7 @@ def _make_card(
         actual_time=actual_time if actual_time is not None else Minutes(0),
         timer_started_at=timer_started_at,
         completed_at=completed_at,
+        entered_workflow_at=entered_workflow_at,
     )
 
 
@@ -219,6 +221,26 @@ def test_card_from_dict_sin_timer_started_at_falla_fast():
 
     with pytest.raises(KeyError):
         card_from_dict(data)
+
+
+def test_card_to_dict_serializa_entered_workflow_at_none_por_defecto():
+    data = card_to_dict(_make_card())
+    assert data["entered_workflow_at"] is None
+
+
+def test_card_to_dict_serializa_entered_workflow_at_poblado():
+    ts = Timestamp.now()
+    data = card_to_dict(_make_card(entered_workflow_at=ts))
+    assert data["entered_workflow_at"] == ts.value
+
+
+def test_card_round_trip_preserva_entered_workflow_at():
+    ts = Timestamp.now()
+    card = _make_card(entered_workflow_at=ts)
+    data = card_to_dict(card)
+    rehydrated = card_from_dict(data)
+    assert rehydrated.entered_workflow_at is not None
+    assert rehydrated.entered_workflow_at.value.date() == ts.value.date()
 
 
 def test_space_from_dict_sin_size_mapping_falla_fast():

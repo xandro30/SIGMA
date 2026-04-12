@@ -48,6 +48,7 @@ class Card:
     actual_time: Minutes = field(default_factory=lambda: Minutes(0))
     timer_started_at: Timestamp | None = None
     completed_at: Timestamp | None = None
+    entered_workflow_at: Timestamp | None = None
     created_at: Timestamp = field(default_factory=Timestamp.now)
     updated_at: Timestamp = field(default_factory=Timestamp.now)
 
@@ -60,9 +61,12 @@ class Card:
             )
 
     def move_to_workflow_state(self, state_id: WorkflowStateId) -> None:
+        was_in_triage = self.pre_workflow_stage is not None
         self.workflow_state_id = state_id
         self.pre_workflow_stage = None
         now = Timestamp.now()
+        if was_in_triage:
+            self.entered_workflow_at = now
         if state_id == FINISH_STATE_ID:
             self.completed_at = now
         else:
@@ -73,6 +77,7 @@ class Card:
         self.pre_workflow_stage = stage
         self.workflow_state_id = None
         self.completed_at = None
+        self.entered_workflow_at = None
         self.updated_at = Timestamp.now()
 
     def add_label(self, label: str) -> None:

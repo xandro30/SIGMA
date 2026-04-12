@@ -1,5 +1,23 @@
 from functools import lru_cache
+
 from google.cloud.firestore import AsyncClient
+
+from sigma_core.metrics.infrastructure.firestore.card_read_repository import (
+    FirestoreMetricsCardReader,
+)
+from sigma_core.metrics.infrastructure.firestore.cycle_read_repository import (
+    FirestoreMetricsCycleReader,
+)
+from sigma_core.metrics.infrastructure.firestore.cycle_snapshot_repository import (
+    FirestoreCycleSnapshotRepository,
+)
+from sigma_core.metrics.infrastructure.firestore.cycle_summary_repository import (
+    FirestoreCycleSummaryRepository,
+)
+from sigma_core.metrics.infrastructure.firestore.space_read_repository import (
+    FirestoreMetricsSpaceReader,
+)
+from sigma_core.shared_kernel.events import EventBus, InProcessEventBus
 
 from sigma_core.planning.infrastructure.firestore.card_read_repository import (
     FirestoreCardReader,
@@ -87,3 +105,35 @@ def get_card_reader() -> FirestoreCardReader:
 
 def get_space_reader() -> FirestoreSpaceReader:
     return FirestoreSpaceReader(get_client())
+
+
+# ── Event Bus (singleton) ───────────────────────���────────────────
+
+_event_bus = InProcessEventBus()
+
+
+def get_event_bus() -> EventBus:
+    return _event_bus
+
+
+# ── Metrics BC ────────────────────────────────────────────────────
+
+
+def get_cycle_summary_repo() -> FirestoreCycleSummaryRepository:
+    return FirestoreCycleSummaryRepository(get_client())
+
+
+def get_cycle_snapshot_repo() -> FirestoreCycleSnapshotRepository:
+    return FirestoreCycleSnapshotRepository(get_client())
+
+
+def get_metrics_card_reader() -> FirestoreMetricsCardReader:
+    return FirestoreMetricsCardReader(get_client())
+
+
+def get_metrics_space_reader() -> FirestoreMetricsSpaceReader:
+    return FirestoreMetricsSpaceReader(get_client())
+
+
+def get_metrics_cycle_reader() -> FirestoreMetricsCycleReader:
+    return FirestoreMetricsCycleReader(get_client())
