@@ -18,4 +18,12 @@ export const useUIStore = create((set) => ({
   createAreaOpen:  false,
   openCreateArea:  () => set({ createAreaOpen: true }),
   closeCreateArea: () => set({ createAreaOpen: false }),
+
+  // Scheduling — week start ISO date
+  activeWeekStart: null,
+  setActiveWeekStart: (d) => set({ activeWeekStart: d }),
+
+  // Metrics — selected cycle id
+  activeCycleId: null,
+  setActiveCycleId: (id) => set({ activeCycleId: id }),
 }));

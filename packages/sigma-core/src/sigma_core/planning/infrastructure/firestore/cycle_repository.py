@@ -2,7 +2,7 @@ from google.cloud.firestore import AsyncClient
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from sigma_core.planning.domain.aggregates.cycle import Cycle
-from sigma_core.planning.domain.enums import CycleState
+from sigma_core.planning.domain.enums import CycleState, CycleType
 from sigma_core.planning.domain.value_objects import CycleId
 from sigma_core.planning.infrastructure.firestore.mappers import (
     cycle_from_dict,
@@ -15,8 +15,10 @@ from sigma_core.shared_kernel.value_objects import SpaceId
 class FirestoreCycleRepository:
     """Adaptador Firestore para `CycleRepository`.
 
-    Índice compuesto requerido: `cycles` → `space_id + state` para
-    `get_active_by_space` (ADR-002: un único cycle activo por space).
+    Indice compuesto requerido: `cycles` → `space_id + state` (+ `cycle_type`
+    opcional) para `get_active_by_space`.
+
+    Restriccion: un ciclo activo por tipo por Space.
     """
 
     COLLECTION = "cycles"
@@ -36,17 +38,31 @@ class FirestoreCycleRepository:
             return None
         return cycle_from_dict(snapshot_data(doc))
 
-    async def get_active_by_space(self, space_id: SpaceId) -> Cycle | None:
+    async def get_active_by_space(
+        self, space_id: SpaceId, cycle_type: CycleType | None = None
+    ) -> Cycle | None:
         query = (
             self._client.collection(self.COLLECTION)
             .where(filter=FieldFilter("space_id", "==", space_id.value))
             .where(filter=FieldFilter("state", "==", CycleState.ACTIVE.value))
-            .limit(1)
         )
-        docs = await query.get()
+        if cycle_type is not None:
+            query = query.where(
+                filter=FieldFilter("cycle_type", "==", cycle_type.value)
+            )
+        docs = await query.limit(1).get()
         if not docs:
             return None
         return cycle_from_dict(snapshot_data(docs[0]))
+
+    async def list_active_by_space(self, space_id: SpaceId) -> list[Cycle]:
+        docs = await (
+            self._client.collection(self.COLLECTION)
+            .where(filter=FieldFilter("space_id", "==", space_id.value))
+            .where(filter=FieldFilter("state", "==", CycleState.ACTIVE.value))
+            .get()
+        )
+        return [cycle_from_dict(snapshot_data(doc)) for doc in docs]
 
     async def list_by_space(self, space_id: SpaceId) -> list[Cycle]:
         docs = await (

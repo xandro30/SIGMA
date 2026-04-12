@@ -14,12 +14,11 @@ class ActivateCycleCommand:
 
 
 class ActivateCycle:
-    """
-    Activa un ciclo en estado DRAFT.
+    """Activa un ciclo en estado DRAFT.
 
-    Enforcement a nivel de use case: un Space no puede tener más de un
-    ciclo ACTIVE simultáneo. Si ya existe otro ciclo activo en el mismo
-    Space, se lanza `CycleAlreadyActiveError`.
+    Restriccion: un Space no puede tener mas de un ciclo ACTIVE **del
+    mismo tipo** simultaneamente. Distintos tipos (sprint + quarter)
+    pueden coexistir activos.
     """
 
     def __init__(self, cycle_repo: CycleRepository) -> None:
@@ -32,7 +31,10 @@ class ActivateCycle:
                 f"Cycle {cmd.cycle_id.value} not found"
             )
 
-        active = await self._cycle_repo.get_active_by_space(cycle.space_id)
+        # Check for existing active cycle of the SAME type
+        active = await self._cycle_repo.get_active_by_space(
+            cycle.space_id, cycle.cycle_type
+        )
         if active is not None and active.id != cycle.id:
             raise CycleAlreadyActiveError(
                 space_id=cycle.space_id.value,

@@ -7,6 +7,8 @@ import AreaList from '../views/areas/AreaList';
 import AreaDetail from '../views/areas/AreaDetail';
 import ProjectDetail from '../views/projects/ProjectDetail';
 import EpicDetail from '../views/epics/EpicDetail';
+import SchedulingView from '../views/scheduling/SchedulingView';
+import MetricsView from '../views/metrics/MetricsView';
 import { color, font } from '../shared/tokens';
 
 function ComingSoon({ name }) {
@@ -32,8 +34,8 @@ export default function App() {
         <Route path="/areas/:areaId"                                           element={<AreaDetail />} />
         <Route path="/areas/:areaId/projects/:projectId"                       element={<ProjectDetail />} />
         <Route path="/areas/:areaId/projects/:projectId/epics/:epicId"         element={<EpicDetail />} />
-        <Route path="/scheduling"                                              element={<ComingSoon name="Scheduling" />} />
-        <Route path="/metrics"                                                 element={<ComingSoon name="Metrics" />} />
+        <Route path="/scheduling"                                              element={<SchedulingView />} />
+        <Route path="/metrics"                                                 element={<MetricsView />} />
         <Route path="*"                                                        element={<Navigate to="/workspace" replace />} />
       </Routes>
     </AppShell>

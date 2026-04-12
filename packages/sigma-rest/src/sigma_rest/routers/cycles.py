@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 
 from sigma_core.planning.application.use_cases.cycle.activate_cycle import (
     ActivateCycle,
@@ -28,6 +28,7 @@ from sigma_core.planning.application.use_cases.cycle.set_buffer_percentage impor
     SetBufferPercentage,
     SetBufferPercentageCommand,
 )
+from sigma_core.planning.domain.enums import CycleType
 from sigma_core.planning.domain.errors import CycleNotFoundError
 from sigma_core.planning.domain.value_objects import CycleId, DateRange
 from sigma_core.shared_kernel.value_objects import AreaId, Minutes, SpaceId, Timestamp
@@ -44,6 +45,15 @@ from sigma_rest.schemas.cycle_schemas import (
 router = APIRouter(prefix="/spaces/{space_id}/cycles", tags=["cycles"])
 
 
+@router.get("")
+async def list_cycles(
+    space_id: str,
+    cycle_repo=Depends(get_cycle_repo),
+):
+    cycles = await cycle_repo.list_by_space(SpaceId(space_id))
+    return {"cycles": [cycle_to_response(c) for c in cycles]}
+
+
 @router.post("", status_code=201)
 async def create_cycle(
     space_id: str,
@@ -58,6 +68,7 @@ async def create_cycle(
             date_range=DateRange(
                 start=body.date_range.start, end=body.date_range.end
             ),
+            cycle_type=CycleType(body.cycle_type.value),
         )
     )
     if body.buffer_percentage is not None:
@@ -73,12 +84,23 @@ async def create_cycle(
 @router.get("/active")
 async def get_active_cycle(
     space_id: str,
+    cycle_type: str | None = Query(default=None),
     cycle_repo=Depends(get_cycle_repo),
 ):
-    cycle = await cycle_repo.get_active_by_space(SpaceId(space_id))
+    ct = CycleType(cycle_type) if cycle_type else None
+    cycle = await cycle_repo.get_active_by_space(SpaceId(space_id), ct)
     if cycle is None:
         raise CycleNotFoundError(f"Space {space_id} has no active cycle")
     return cycle_to_response(cycle)
+
+
+@router.get("/active/all")
+async def list_active_cycles(
+    space_id: str,
+    cycle_repo=Depends(get_cycle_repo),
+):
+    cycles = await cycle_repo.list_active_by_space(SpaceId(space_id))
+    return {"cycles": [cycle_to_response(c) for c in cycles]}
 
 
 @router.get("/{cycle_id}")

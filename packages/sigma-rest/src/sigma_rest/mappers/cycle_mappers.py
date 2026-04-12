@@ -11,6 +11,7 @@ def cycle_to_response(cycle: Cycle) -> CycleResponse:
         id=cycle.id.value,
         space_id=cycle.space_id.value,
         name=cycle.name,
+        cycle_type=cycle.cycle_type.value,
         date_range=DateRangeSchema(
             start=cycle.date_range.start, end=cycle.date_range.end
         ),

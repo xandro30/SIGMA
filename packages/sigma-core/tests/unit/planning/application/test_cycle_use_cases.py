@@ -64,11 +64,17 @@ class FakeCycleRepository:
     async def get_by_id(self, cycle_id: CycleId) -> Cycle | None:
         return self._store.get(cycle_id.value)
 
-    async def get_active_by_space(self, space_id: SpaceId) -> Cycle | None:
+    async def get_active_by_space(self, space_id: SpaceId, cycle_type=None) -> Cycle | None:
         for cycle in self._store.values():
-            if cycle.space_id == space_id and cycle.state == CycleState.ACTIVE:
-                return cycle
+            if cycle.space_id != space_id or cycle.state != CycleState.ACTIVE:
+                continue
+            if cycle_type is not None and cycle.cycle_type != cycle_type:
+                continue
+            return cycle
         return None
+
+    async def list_active_by_space(self, space_id: SpaceId) -> list[Cycle]:
+        return [c for c in self._store.values() if c.space_id == space_id and c.state == CycleState.ACTIVE]
 
     async def list_by_space(self, space_id: SpaceId) -> list[Cycle]:
         return [c for c in self._store.values() if c.space_id == space_id]

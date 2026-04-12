@@ -10,6 +10,15 @@ class CycleState(str, Enum):
     CLOSED = "closed"
 
 
+class CycleType(str, Enum):
+    """Tipo de ciclo. Puede haber un ciclo activo por tipo por Space."""
+
+    SPRINT = "sprint"
+    QUARTER = "quarter"
+    SEMESTER = "semester"
+    ANNUAL = "annual"
+
+
 class DayOfWeek(int, Enum):
     MONDAY = 0
     TUESDAY = 1

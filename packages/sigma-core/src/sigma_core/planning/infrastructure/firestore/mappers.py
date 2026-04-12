@@ -46,7 +46,7 @@ from sigma_core.planning.domain.entities.day_template_block import (
     DayTemplateBlock,
 )
 from sigma_core.planning.domain.entities.time_block import TimeBlock
-from sigma_core.planning.domain.enums import CycleState, DayOfWeek
+from sigma_core.planning.domain.enums import CycleState, CycleType, DayOfWeek
 from sigma_core.planning.domain.value_objects import (
     BlockId,
     CycleId,
@@ -100,6 +100,7 @@ def cycle_to_dict(cycle: Cycle) -> dict[str, Any]:
         "id": cycle.id.value,
         "space_id": cycle.space_id.value,
         "name": cycle.name,
+        "cycle_type": cycle.cycle_type.value,
         "date_range": {
             "start": _date_to_primitive(cycle.date_range.start),
             "end": _date_to_primitive(cycle.date_range.end),
@@ -125,6 +126,7 @@ def cycle_from_dict(data: dict[str, Any]) -> Cycle:
         id=CycleId(data["id"]),
         space_id=SpaceId(data["space_id"]),
         name=data["name"],
+        cycle_type=CycleType(data["cycle_type"]),
         date_range=DateRange(
             start=_date_from_primitive(data["date_range"]["start"]),
             end=_date_from_primitive(data["date_range"]["end"]),

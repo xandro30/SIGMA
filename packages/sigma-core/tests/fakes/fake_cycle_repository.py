@@ -1,5 +1,5 @@
 from sigma_core.planning.domain.aggregates.cycle import Cycle
-from sigma_core.planning.domain.enums import CycleState
+from sigma_core.planning.domain.enums import CycleState, CycleType
 from sigma_core.planning.domain.value_objects import CycleId
 from sigma_core.shared_kernel.value_objects import SpaceId
 
@@ -14,11 +14,22 @@ class FakeCycleRepository:
     async def get_by_id(self, cycle_id: CycleId) -> Cycle | None:
         return self._store.get(cycle_id.value)
 
-    async def get_active_by_space(self, space_id: SpaceId) -> Cycle | None:
+    async def get_active_by_space(
+        self, space_id: SpaceId, cycle_type: CycleType | None = None
+    ) -> Cycle | None:
         for c in self._store.values():
-            if c.space_id == space_id and c.state == CycleState.ACTIVE:
-                return c
+            if c.space_id != space_id or c.state != CycleState.ACTIVE:
+                continue
+            if cycle_type is not None and c.cycle_type != cycle_type:
+                continue
+            return c
         return None
+
+    async def list_active_by_space(self, space_id: SpaceId) -> list[Cycle]:
+        return [
+            c for c in self._store.values()
+            if c.space_id == space_id and c.state == CycleState.ACTIVE
+        ]
 
     async def list_by_space(self, space_id: SpaceId) -> list[Cycle]:
         return [c for c in self._store.values() if c.space_id == space_id]

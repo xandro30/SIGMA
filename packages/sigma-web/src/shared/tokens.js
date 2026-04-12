@@ -48,14 +48,28 @@ export const elevation = {
 // ─── Motion ───────────────────────────────────────────────────────────────────
 // Spring-based easing everywhere — removes robotic feel
 export const motion = {
-  fast:   '120ms cubic-bezier(0.16, 1, 0.3, 1)',
-  normal: '220ms cubic-bezier(0.16, 1, 0.3, 1)',
-  slow:   '380ms cubic-bezier(0.16, 1, 0.3, 1)',
-  spring: '400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+  instant: '80ms cubic-bezier(0.16, 1, 0.3, 1)',
+  fast:    '120ms cubic-bezier(0.16, 1, 0.3, 1)',
+  normal:  '220ms cubic-bezier(0.16, 1, 0.3, 1)',
+  slow:    '380ms cubic-bezier(0.16, 1, 0.3, 1)',
+  spring:  '400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+};
+
+// ─── Spacing scale ────────────────────────────────────────────────────────────
+// 4px base rhythm — use these instead of arbitrary px values
+export const space = {
+  xs:   '4px',
+  sm:   '8px',
+  md:   '12px',
+  lg:   '16px',
+  xl:   '24px',
+  '2xl': '32px',
+  '3xl': '48px',
 };
 
 // ─── Border radius ────────────────────────────────────────────────────────────
 export const radius = {
+  xs: '4px',
   sm: '6px',
   md: '10px',
   lg: '14px',
@@ -95,3 +109,37 @@ export const priority = {
 export const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
 export const FINISH_ID = '00000000-0000-4000-a000-000000000002';
 export const BEGIN_ID  = '00000000-0000-4000-a000-000000000001';
+
+// ─── Calendar / Planner ──────────────────────────────────────────────────────
+export const calendar = {
+  hourHeight:      '60px',
+  hourHeightPx:    60,             // numeric for calculations
+  blockMinHeight:  '30px',
+  dayHeaderHeight: '48px',
+  hourLabelWidth:  '48px',
+  gridBorder:      'rgba(255,255,255,0.04)',
+  nowLine:         '#F5C518',
+  startHour:       6,              // grid starts at 06:00
+  endHour:         23,             // grid ends at 23:00
+};
+
+// ─── Dashboard / Metrics ─────────────────────────────────────────────────────
+export const dashboard = {
+  kpiCardMinWidth: '200px',
+  kpiValueSize:    '28px',
+  kpiLabelSize:    '11px',
+  bulletHeight:    '8px',
+  bulletBg:        'rgba(255,255,255,0.06)',
+  bulletFill:      '#F5C518',
+  indentStep:      24,             // numeric px per tree level
+  liveBadge:       '#22C55E',
+  snapshotBadge:   '#6B7280',
+  overshoot:       '#EF4444',      // consumed > budget
+};
+
+// ─── Overlay ─────────────────────────────────────────────────────────────────
+// Standardized — replaces hardcoded rgba(0,0,0,0.75) scattered in modals
+export const overlay = {
+  scrim:  'rgba(0,0,0,0.75)',
+  dimmed: 'rgba(0,0,0,0.5)',
+};

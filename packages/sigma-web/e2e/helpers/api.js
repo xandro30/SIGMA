@@ -66,4 +66,63 @@ export const api = {
   createEpic: (spaceId, data) =>
     request('POST', `/v1/spaces/${spaceId}/epics`, data),
   deleteEpic: (id) => request('DELETE', `/v1/epics/${id}`),
+
+  // ── Planning (v2) ────────────────────────────────────────
+
+  // Cycles
+  createCycle: (spaceId, data) =>
+    request('POST', `/v1/spaces/${spaceId}/cycles`, data),
+  activateCycle: (spaceId, cycleId) =>
+    request('POST', `/v1/spaces/${spaceId}/cycles/${cycleId}/activate`),
+  closeCycle: (spaceId, cycleId) =>
+    request('POST', `/v1/spaces/${spaceId}/cycles/${cycleId}/close`),
+  getActiveCycle: (spaceId) =>
+    request('GET', `/v1/spaces/${spaceId}/cycles/active`),
+  setBudget: (spaceId, cycleId, data) =>
+    request('PUT', `/v1/spaces/${spaceId}/cycles/${cycleId}/budgets`, data),
+
+  // Weeks
+  createWeek: (spaceId, data) =>
+    request('POST', `/v1/spaces/${spaceId}/weeks`, data),
+  getWeek: (spaceId, weekStart) =>
+    request('GET', `/v1/spaces/${spaceId}/weeks/${weekStart}`),
+  setWeekNotes: (spaceId, weekStart, data) =>
+    request('PUT', `/v1/spaces/${spaceId}/weeks/${weekStart}/notes`, data),
+  applyWeekTemplate: (spaceId, weekStart, data) =>
+    request('POST', `/v1/spaces/${spaceId}/weeks/${weekStart}/apply-template`, data),
+
+  // Days
+  createDay: (spaceId, data) =>
+    request('POST', `/v1/spaces/${spaceId}/days`, data),
+  getDayByDate: (spaceId, date) =>
+    request('GET', `/v1/spaces/${spaceId}/days/by-date/${date}`),
+  getDaysInRange: (spaceId, start, end) =>
+    request('GET', `/v1/spaces/${spaceId}/days/by-range?start=${start}&end=${end}`),
+  addBlock: (spaceId, dayId, data) =>
+    request('POST', `/v1/spaces/${spaceId}/days/${dayId}/blocks`, data),
+  removeBlock: (spaceId, dayId, blockId) =>
+    request('DELETE', `/v1/spaces/${spaceId}/days/${dayId}/blocks/${blockId}`),
+
+  // Templates
+  createDayTemplate: (spaceId, data) =>
+    request('POST', `/v1/spaces/${spaceId}/day-templates`, data),
+  listDayTemplates: (spaceId) =>
+    request('GET', `/v1/spaces/${spaceId}/day-templates`),
+  createWeekTemplate: (spaceId, data) =>
+    request('POST', `/v1/spaces/${spaceId}/week-templates`, data),
+  setWeekSlot: (spaceId, templateId, weekday, data) =>
+    request('PUT', `/v1/spaces/${spaceId}/week-templates/${templateId}/slots/${weekday}`, data),
+
+  // Capacity + ETA
+  getCapacity: (spaceId) =>
+    request('GET', `/v1/spaces/${spaceId}/capacity`),
+
+  // ── Metrics (v3) ─────────────────────────────────────────
+
+  getMetrics: (spaceId, cycleId) => {
+    const params = cycleId ? `?cycle_id=${cycleId}` : '';
+    return request('GET', `/v1/spaces/${spaceId}/metrics${params}`);
+  },
+  getSnapshot: (spaceId, cycleId) =>
+    request('GET', `/v1/spaces/${spaceId}/metrics/snapshots/${cycleId}`),
 };

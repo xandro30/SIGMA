@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from sigma_core.planning.domain.enums import CycleState
+from sigma_core.planning.domain.enums import CycleState, CycleType
 from sigma_core.planning.domain.errors import (
     BudgetNotFoundError,
     InvalidBufferError,
@@ -25,6 +25,7 @@ class Cycle(EventEmitterMixin):
     space_id: SpaceId
     name: str
     date_range: DateRange
+    cycle_type: CycleType = CycleType.SPRINT
     state: CycleState = CycleState.DRAFT
     area_budgets: dict[AreaId, Minutes] = field(default_factory=dict)
     buffer_percentage: int = DEFAULT_BUFFER_PERCENTAGE

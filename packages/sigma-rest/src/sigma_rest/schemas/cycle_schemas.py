@@ -1,4 +1,5 @@
 from datetime import date
+from enum import Enum
 
 from pydantic import BaseModel, Field
 
@@ -6,7 +7,14 @@ from sigma_rest.schemas._limits import (
     MAX_NAME_LENGTH,
     MIN_NAME_LENGTH,
     UUID_STRING_LENGTH,
-)  # noqa: F401  (UUID_STRING_LENGTH usado abajo en SetAreaBudgetRequest)
+)
+
+
+class CycleTypeEnum(str, Enum):
+    sprint = "sprint"
+    quarter = "quarter"
+    semester = "semester"
+    annual = "annual"
 
 
 class DateRangeSchema(BaseModel):
@@ -17,6 +25,7 @@ class DateRangeSchema(BaseModel):
 class CreateCycleRequest(BaseModel):
     name: str = Field(min_length=MIN_NAME_LENGTH, max_length=MAX_NAME_LENGTH)
     date_range: DateRangeSchema
+    cycle_type: CycleTypeEnum = CycleTypeEnum.sprint
     buffer_percentage: int | None = Field(default=None, ge=0, le=100)
 
 
@@ -38,6 +47,7 @@ class CycleResponse(BaseModel):
     id: str
     space_id: str
     name: str
+    cycle_type: str
     date_range: DateRangeSchema
     state: str
     area_budgets: list[AreaBudgetResponse]

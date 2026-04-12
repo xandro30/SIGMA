@@ -14,11 +14,11 @@ const ICONS = {
 };
 
 const NAV_ITEMS = [
-  { id: 'board',      path: '/workspace',  label: 'Board',    available: true  },
-  { id: 'triage',     path: '/triage',     label: 'Triage',   available: true  },
-  { id: 'areas',      path: '/areas',      label: 'Áreas',    available: true  },
-  { id: 'scheduling', path: '/scheduling', label: 'Schedule', available: false },
-  { id: 'metrics',    path: '/metrics',    label: 'Metrics',  available: false },
+  { id: 'board',      path: '/workspace',  label: 'Board',    available: true },
+  { id: 'triage',     path: '/triage',     label: 'Triage',   available: true },
+  { id: 'areas',      path: '/areas',      label: 'Áreas',    available: true },
+  { id: 'scheduling', path: '/scheduling', label: 'Schedule', available: true },
+  { id: 'metrics',    path: '/metrics',    label: 'Metrics',  available: true },
 ];
 
 function NavItem({ item, isActive, onClick }) {
@@ -83,9 +83,11 @@ export default function Topbar() {
 
   const activeSpace = spaces.find(s => s.id === activeSpaceId);
   const activeNavId = (() => {
-    if (pathname.startsWith('/triage'))    return 'triage';
-    if (pathname.startsWith('/workspace')) return 'board';
-    if (pathname.startsWith('/areas'))     return 'areas';
+    if (pathname.startsWith('/triage'))     return 'triage';
+    if (pathname.startsWith('/workspace'))  return 'board';
+    if (pathname.startsWith('/areas'))      return 'areas';
+    if (pathname.startsWith('/scheduling')) return 'scheduling';
+    if (pathname.startsWith('/metrics'))    return 'metrics';
     return 'board';
   })();
 
