@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { color, font, radius, space, elevation } from '../../../shared/tokens';
+import { color, dashboard, font, radius, space, elevation } from '../../../shared/tokens';
 
 export default function ScatterMini({ entries }) {
   const [tooltip, setTooltip] = useState(null);
@@ -43,7 +43,7 @@ export default function ScatterMini({ entries }) {
             cx={scaleX(e.estimated_minutes)}
             cy={scaleY(e.actual_minutes)}
             r={tooltip === i ? 6 : 4}
-            fill="rgba(245,197,24,0.6)"
+            fill={dashboard.scatterDot}
             style={{ cursor: 'pointer', transition: 'r 120ms' }}
             onMouseEnter={() => setTooltip(i)}
             onMouseLeave={() => setTooltip(null)}

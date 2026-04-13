@@ -29,7 +29,7 @@ export default function MetricsRow({ name, type, level, areaColorId, metrics, bu
         onMouseLeave={() => setHovered(false)}
         style={{
           display: 'grid',
-          gridTemplateColumns: `minmax(180px, 1fr) 80px 80px 80px 120px`,
+          gridTemplateColumns: dashboard.treeGridColumns,
           alignItems: 'center',
           minHeight: '44px',
           padding: `${space.sm} ${space.lg}`,

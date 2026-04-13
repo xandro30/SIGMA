@@ -133,8 +133,13 @@ export const dashboard = {
   bulletFill:      '#F5C518',
   indentStep:      24,             // numeric px per tree level
   liveBadge:       '#22C55E',
+  liveBadgeBg:     'rgba(34,197,94,0.12)',
   snapshotBadge:   '#6B7280',
+  snapshotBadgeBg: 'rgba(107,114,128,0.12)',
   overshoot:       '#EF4444',      // consumed > budget
+  scatterDot:      'rgba(245,197,24,0.6)',
+  // MetricsTree/Row grid column template (single source of truth)
+  treeGridColumns:  'minmax(180px, 1fr) 80px 80px 80px 120px',
 };
 
 // ─── Overlay ─────────────────────────────────────────────────────────────────

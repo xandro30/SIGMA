@@ -3,7 +3,7 @@ import { font, radius, space, dashboard } from '../../../shared/tokens';
 export default function SourceBadge({ source }) {
   const isLive = source === 'on_demand';
   const dotColor = isLive ? dashboard.liveBadge : dashboard.snapshotBadge;
-  const bgColor = isLive ? 'rgba(34,197,94,0.12)' : 'rgba(107,114,128,0.12)';
+  const bgColor = isLive ? dashboard.liveBadgeBg : dashboard.snapshotBadgeBg;
   const label = isLive ? 'LIVE' : 'SNAPSHOT';
 
   return (

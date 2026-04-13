@@ -1,4 +1,4 @@
-import { color, font, space } from '../../../shared/tokens';
+import { color, font, space, dashboard } from '../../../shared/tokens';
 import MetricsRow from './MetricsRow';
 
 export default function MetricsTree({ areas }) {
@@ -28,11 +28,11 @@ export default function MetricsTree({ areas }) {
   };
 
   return (
-    <div role="tree" aria-label="Metricas por area, proyecto y epica">
+    <div role="tree" aria-label="Metricas por area">
       {/* Header row */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(180px, 1fr) 80px 80px 80px 120px',
+        gridTemplateColumns: dashboard.treeGridColumns,
         padding: `${space.sm} ${space.lg}`,
         borderBottom: `1px solid ${color.border}`,
       }}>
