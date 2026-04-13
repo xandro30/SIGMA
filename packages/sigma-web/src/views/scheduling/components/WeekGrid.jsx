@@ -5,7 +5,7 @@ import HourLabels from './HourLabels';
 import DayColumn from './DayColumn';
 import DayHeader from './DayHeader';
 
-export default function WeekGrid({ weekStart, days, areas, onBlockClick }) {
+export default function WeekGrid({ weekStart, days, areas, onBlockClick, dragHandlers, ghostBlock }) {
   const scrollRef = useRef(null);
   const dates = getWeekDates(weekStart);
 
@@ -60,6 +60,9 @@ export default function WeekGrid({ weekStart, days, areas, onBlockClick }) {
           display: 'flex',
           overflow: 'auto',
         }}
+        onMouseMove={dragHandlers?.handleMouseMove}
+        onMouseUp={dragHandlers?.handleMouseUp}
+        onMouseLeave={dragHandlers?.handleMouseUp}
       >
         <HourLabels />
         {dates.map(date => (
@@ -69,6 +72,8 @@ export default function WeekGrid({ weekStart, days, areas, onBlockClick }) {
             day={daysByDate[date]}
             areas={areas}
             onBlockClick={onBlockClick}
+            onMouseDown={dragHandlers ? (e) => dragHandlers.handleMouseDown(e, date) : undefined}
+            ghostBlock={ghostBlock?.dayDate === date ? ghostBlock : null}
           />
         ))}
       </div>

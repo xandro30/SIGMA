@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { color, font, elevation, motion, radius } from '../../../shared/tokens';
 import { useUIStore }  from '../../../shared/store/useUIStore';
 import { useSpaces }   from '../../../entities/space/hooks/useSpaces';
+import { useEscapeKey } from '../../../shared/hooks/useEscapeKey';
 
 // SVG-based nav icons (no emojis — consistent stroke weight, themeable)
 const ICONS = {
@@ -73,6 +74,8 @@ export default function Topbar() {
   const { data: spaces = [] } = useSpaces();
   const [dropOpen, setDropOpen] = useState(false);
   const [dropHov,  setDropHov]  = useState(false);
+  const closeDrop = useCallback(() => setDropOpen(false), []);
+  useEscapeKey(dropOpen ? closeDrop : null);
 
   // Auto-select first space when activeSpaceId is null or no longer exists in Firestore
   useEffect(() => {

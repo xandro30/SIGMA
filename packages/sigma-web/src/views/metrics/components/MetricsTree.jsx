@@ -11,7 +11,7 @@ export default function MetricsTree({ areas }) {
         fontSize: '13px',
         color: color.muted2,
       }}>
-        Sin datos por area en este ciclo
+        Sin datos por área en este ciclo
       </div>
     );
   }

@@ -3,8 +3,10 @@ import { color, font } from "../../../shared/tokens";
 import SectionLabel from "../../../shared/components/SectionLabel";
 import { useCreateSpace } from "../../../entities/space/hooks/useSpaces";
 import { useUIStore } from "../../../shared/store/useUIStore";
+import { useEscapeKey } from "../../../shared/hooks/useEscapeKey";
 export default function CreateSpaceModal({ onCreated }) {
   const closeModal = useUIStore((s) => s.closeCreateSpace);
+  useEscapeKey(closeModal);
   const { mutate: createSpace, isPending } = useCreateSpace();
   const [name, setName] = useState("");
   const handleCreate = () => { if(!name.trim()||isPending) return; createSpace({ name:name.trim() }, { onSuccess:(s)=>{ closeModal(); onCreated?.(s); } }); };

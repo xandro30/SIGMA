@@ -96,6 +96,59 @@ export function formatDays(minutes) {
   return `${days.toFixed(1)}d`;
 }
 
+/** "Lunes 14 Abr 2026" */
+export function formatDayTitle(isoDate) {
+  const d = parseISO(isoDate);
+  const dayName = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'][d.getDay()];
+  const month = MONTH_NAMES[d.getMonth()];
+  return `${dayName} ${d.getDate()} ${month} ${d.getFullYear()}`;
+}
+
+/** "Abr 2026" */
+export function formatMonthTitle(isoDate) {
+  const d = parseISO(isoDate);
+  return `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/** 42 ISO dates covering the calendar grid for the month of `isoDate`. */
+export function getMonthDates(isoDate) {
+  const d = parseISO(isoDate);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startDow = firstDay.getDay();
+  const padBefore = startDow === 0 ? 6 : startDow - 1;
+  const startDate = new Date(firstDay);
+  startDate.setDate(startDate.getDate() - padBefore);
+  const dates = [];
+  const current = new Date(startDate);
+  for (let i = 0; i < 42; i++) {
+    dates.push(toISO(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
+
+/** First day of the month as ISO string. */
+export function getFirstOfMonth(isoDate) {
+  const d = parseISO(isoDate);
+  return toISO(new Date(d.getFullYear(), d.getMonth(), 1));
+}
+
+/** Add N months to an ISO date. */
+export function addMonths(isoDate, n) {
+  const d = parseISO(isoDate);
+  d.setMonth(d.getMonth() + n);
+  return toISO(d);
+}
+
+/** Are both dates in the same month+year? */
+export function isSameMonth(isoDate, refDate) {
+  const a = parseISO(isoDate);
+  const b = parseISO(refDate);
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
 // ── Internal helpers ─────────────────────────────────
 function parseISO(s) {
   return new Date(s + 'T00:00:00');

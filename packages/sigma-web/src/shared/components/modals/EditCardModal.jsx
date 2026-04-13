@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { color, font, priority as pt, getAreaHex } from '../../tokens';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useUIStore } from '../../store/useUIStore';
 import { useSpaces } from '../../../entities/space/hooks/useSpaces';
 import { useAreas } from '../../../entities/area/hooks/useAreas';
@@ -39,6 +40,7 @@ function Field({ label, children }) {
 }
 
 export default function EditCardModal({ card, onClose }) {
+  useEscapeKey(onClose);
   const activeSpaceId = useUIStore(s => s.activeSpaceId);
   const { data: spaces   = [] } = useSpaces();
   const { data: areas    = [] } = useAreas();
@@ -116,8 +118,11 @@ export default function EditCardModal({ card, onClose }) {
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         width: '560px', maxWidth: '96vw', maxHeight: '90vh',
-        background: color.s1, border: `1px solid ${color.border}`,
+        background: color.s1,
         borderTop: `4px solid ${accentColor}`,
+        borderRight: `1px solid ${color.border}`,
+        borderBottom: `1px solid ${color.border}`,
+        borderLeft: `1px solid ${color.border}`,
         borderRadius: '14px', zIndex: 601,
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 40px 100px #000000ee', overflow: 'hidden',

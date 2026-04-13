@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { color, font, space } from '../../shared/tokens';
 import { useUIStore } from '../../shared/store/useUIStore';
 import { useMetrics } from '../../entities/metrics/hooks/useMetrics';
+import { planningApi } from '../../api/planning';
 import MetricsHeader from './components/MetricsHeader';
 import { KPIRow } from './components/KPICard';
 import MetricsTree from './components/MetricsTree';
@@ -10,6 +12,12 @@ export default function MetricsView() {
   const spaceId = useUIStore(s => s.activeSpaceId);
   const [cycleId, setCycleId] = useState(null);
   const { data: metrics, isLoading, error } = useMetrics(spaceId, cycleId);
+  const { data: allCycles } = useQuery({
+    queryKey: ['allCycles', spaceId],
+    queryFn: () => planningApi.listCycles(spaceId),
+    enabled: !!spaceId,
+  });
+  const cycles = allCycles?.cycles ?? allCycles ?? [];
 
   if (!spaceId) {
     return (
@@ -86,7 +94,7 @@ export default function MetricsView() {
     <div style={{ flex: 1, overflow: 'auto' }}>
       <MetricsHeader
         metrics={metrics}
-        cycles={[]} // TODO: fetch cycle list for selector
+        cycles={cycles}
         activeCycleId={cycleId ?? metrics.cycle_id}
         onCycleChange={setCycleId}
       />

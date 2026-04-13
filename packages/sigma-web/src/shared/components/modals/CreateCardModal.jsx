@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { color, font, priority as pt, getAreaHex } from '../../tokens';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useUIStore } from '../../store/useUIStore';
 import { useAreas } from '../../../entities/area/hooks/useAreas';
 import { useProjects } from '../../../entities/project/hooks/useProjects';
@@ -27,6 +28,7 @@ const STAGES = [
 
 export default function CreateCardModal() {
   const close         = useUIStore(s => s.closeCreateCard);
+  useEscapeKey(close);
   const activeSpaceId = useUIStore(s => s.activeSpaceId);
 
   const { data: areas = [] } = useAreas();
@@ -87,8 +89,11 @@ export default function CreateCardModal() {
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         width: '500px', maxWidth: '95vw', maxHeight: '90vh',
-        background: color.s1, border: `1px solid ${color.border}`,
+        background: color.s1,
         borderTop: `3px solid ${accentColor}`,
+        borderRight: `1px solid ${color.border}`,
+        borderBottom: `1px solid ${color.border}`,
+        borderLeft: `1px solid ${color.border}`,
         borderRadius: '14px', zIndex: 601,
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 40px 100px #000000dd', overflow: 'hidden',

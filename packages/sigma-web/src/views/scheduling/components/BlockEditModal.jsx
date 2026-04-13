@@ -1,17 +1,69 @@
 import { useState } from 'react';
 import { color, font, radius, space, elevation, motion, overlay } from '../../../shared/tokens';
 import { X } from '../../../shared/components/Icons';
+import { useEscapeKey } from '../../../shared/hooks/useEscapeKey';
+
+function toDatetimeLocal(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+function addMinutesToDatetimeLocal(dtLocal, minutes) {
+  if (!dtLocal) return '';
+  const d = new Date(dtLocal);
+  d.setMinutes(d.getMinutes() + minutes);
+  return toDatetimeLocal(d.toISOString());
+}
+
+function diffMinutes(startDtLocal, endDtLocal) {
+  if (!startDtLocal || !endDtLocal) return 0;
+  const a = new Date(startDtLocal);
+  const b = new Date(endDtLocal);
+  return Math.max(5, Math.round((b - a) / 60000));
+}
 
 export default function BlockEditModal({ block, areas, onSave, onDelete, onClose }) {
+  useEscapeKey(onClose);
   const isNew = !block?.id;
-  const [startAt, setStartAt] = useState(block?.start_at ?? '');
+  const [startAt, setStartAt] = useState(() => toDatetimeLocal(block?.start_at));
   const [duration, setDuration] = useState(block?.duration ?? 60);
   const [areaId, setAreaId] = useState(block?.area_id ?? '');
   const [notes, setNotes] = useState(block?.notes ?? '');
+  const [endAt, setEndAt] = useState(() => addMinutesToDatetimeLocal(toDatetimeLocal(block?.start_at), block?.duration ?? 60));
+
+  const handleStartChange = (value) => {
+    setStartAt(value);
+    // Recalculate end from new start + current duration
+    if (value) setEndAt(addMinutesToDatetimeLocal(value, duration));
+  };
+
+  const handleDurationChange = (value) => {
+    const mins = Math.max(5, Number(value) || 0);
+    setDuration(mins);
+    // Recalculate end from start + new duration
+    if (startAt) setEndAt(addMinutesToDatetimeLocal(startAt, mins));
+  };
+
+  const handleEndChange = (value) => {
+    setEndAt(value);
+    // Only recalculate duration when end is valid and after start
+    if (!value || !startAt) return;
+    const start = new Date(startAt);
+    const end = new Date(value);
+    if (isNaN(end.getTime()) || end <= start) return;
+    const mins = Math.round((end - start) / 60000);
+    if (mins >= 5) setDuration(mins);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // datetime-local gives "2026-04-12T16:00" without TZ — append local offset
+    if (!startAt) return;
     const isoWithTz = appendLocalTimezone(startAt);
     onSave({ start_at: isoWithTz, duration, area_id: areaId || null, notes });
   };
@@ -43,6 +95,8 @@ export default function BlockEditModal({ block, areas, onSave, onDelete, onClose
           position: 'relative',
           width: '380px',
           maxWidth: '90vw',
+          maxHeight: '85vh',
+          overflowY: 'auto',
           background: color.s2,
           borderRadius: radius.lg,
           boxShadow: elevation[3],
@@ -50,7 +104,7 @@ export default function BlockEditModal({ block, areas, onSave, onDelete, onClose
           display: 'flex',
           flexDirection: 'column',
           gap: space.lg,
-          animation: 'scaleIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          animation: 'scaleInFlex 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
         }}
       >
         {/* Header */}
@@ -81,39 +135,42 @@ export default function BlockEditModal({ block, areas, onSave, onDelete, onClose
 
         {/* Start time */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: space.xs }}>
-          <span style={{ fontFamily: font.mono, fontSize: '11px', color: color.muted2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Hora inicio
-          </span>
+          <span style={labelStyle}>Hora inicio</span>
           <input
             type="datetime-local"
             value={startAt}
-            onChange={(e) => setStartAt(e.target.value)}
+            onChange={(e) => handleStartChange(e.target.value)}
             required
           />
         </label>
 
-        {/* Duration */}
-        <label style={{ display: 'flex', flexDirection: 'column', gap: space.xs }}>
-          <span style={{ fontFamily: font.mono, fontSize: '11px', color: color.muted2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Duracion (minutos)
-          </span>
-          <input
-            type="number"
-            min={15}
-            step={15}
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-            required
-          />
-        </label>
+        {/* Duration + End time — bidirectional */}
+        <div style={{ display: 'flex', gap: space.md }}>
+          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: space.xs }}>
+            <span style={labelStyle}>Duración (min)</span>
+            <input
+              type="number"
+              min={5}
+              step={5}
+              value={duration}
+              onChange={(e) => handleDurationChange(e.target.value)}
+            />
+          </label>
+          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: space.xs }}>
+            <span style={labelStyle}>Hora fin</span>
+            <input
+              type="datetime-local"
+              value={endAt}
+              onChange={(e) => handleEndChange(e.target.value)}
+            />
+          </label>
+        </div>
 
-        {/* Area */}
+        {/* Area — optional */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: space.xs }}>
-          <span style={{ fontFamily: font.mono, fontSize: '11px', color: color.muted2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Area
-          </span>
+          <span style={labelStyle}>Área</span>
           <select value={areaId} onChange={(e) => setAreaId(e.target.value)}>
-            <option value="">Sin area</option>
+            <option value="">Sin área</option>
             {(areas ?? []).map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
@@ -122,9 +179,7 @@ export default function BlockEditModal({ block, areas, onSave, onDelete, onClose
 
         {/* Notes */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: space.xs }}>
-          <span style={{ fontFamily: font.mono, fontSize: '11px', color: color.muted2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Notas
-          </span>
+          <span style={labelStyle}>Notas</span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -197,19 +252,26 @@ export default function BlockEditModal({ block, areas, onSave, onDelete, onClose
   );
 }
 
+const labelStyle = {
+  fontFamily: font.mono,
+  fontSize: '11px',
+  color: color.muted2,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+};
+
 /**
  * Appends the local timezone offset to a datetime-local value.
  * "2026-04-12T16:00" → "2026-04-12T16:00:00+02:00"
  */
 function appendLocalTimezone(dtLocal) {
   if (!dtLocal) return dtLocal;
-  if (dtLocal.includes('+') || dtLocal.includes('Z')) return dtLocal; // already has TZ
+  if (dtLocal.includes('+') || dtLocal.includes('Z')) return dtLocal;
   const d = new Date(dtLocal);
   const offset = -d.getTimezoneOffset();
   const sign = offset >= 0 ? '+' : '-';
   const hh = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
   const mm = String(Math.abs(offset) % 60).padStart(2, '0');
-  // Ensure seconds are present for ISO compliance
   const base = dtLocal.length === 16 ? dtLocal + ':00' : dtLocal;
   return `${base}${sign}${hh}:${mm}`;
 }

@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { color, font, radius, space, elevation, motion } from '../../../shared/tokens';
 import { ChevronDown } from '../../../shared/components/Icons';
 import SourceBadge from './SourceBadge';
+import { useEscapeKey } from '../../../shared/hooks/useEscapeKey';
 
 export default function CycleSelector({ cycles, activeCycleId, onSelect }) {
   const [open, setOpen] = useState(false);
@@ -14,6 +15,9 @@ export default function CycleSelector({ cycles, activeCycleId, onSelect }) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  const closeDropdown = useCallback(() => setOpen(false), []);
+  useEscapeKey(open ? closeDropdown : null);
 
   const selected = (cycles ?? []).find(c => c.id === activeCycleId);
   const label = selected?.name ?? 'Seleccionar ciclo';

@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { color, font, radius, space, elevation, motion, overlay } from '../../../shared/tokens';
 import { X, Plus } from '../../../shared/components/Icons';
 import { planningApi } from '../../../api/planning';
+import { useEscapeKey } from '../../../shared/hooks/useEscapeKey';
 
 const CYCLE_TYPES = [
   { value: 'sprint', label: 'Sprint', desc: '1-4 semanas' },
   { value: 'quarter', label: 'Quarter', desc: '~3 meses' },
   { value: 'semester', label: 'Semestre', desc: '~6 meses' },
-  { value: 'annual', label: 'Anual', desc: '1 ano' },
+  { value: 'annual', label: 'Anual', desc: '1 año' },
 ];
 
 export default function CycleManager({ spaceId, areas, onClose, onChanged }) {
+  useEscapeKey(onClose);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [cycleType, setCycleType] = useState('sprint');
@@ -96,7 +98,7 @@ export default function CycleManager({ spaceId, areas, onClose, onChanged }) {
         position: 'relative', width: '500px', maxWidth: '92vw', maxHeight: '85vh',
         background: color.s2, borderRadius: radius.lg, boxShadow: elevation[3],
         padding: space['2xl'], display: 'flex', flexDirection: 'column', gap: space.lg,
-        overflowY: 'auto', animation: 'scaleIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        overflowY: 'auto', animation: 'scaleInFlex 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -321,7 +323,7 @@ function StateBadge({ state }) {
 
 function TypeBadge({ type }) {
   if (!type) return null;
-  const labels = { sprint: 'SPR', quarter: 'Q', semester: 'SEM', annual: 'ANU' };
+  const labels = { sprint: 'Sprint', quarter: 'Trimestre', semester: 'Semestre', annual: 'Año' };
   return (
     <span style={{
       padding: `1px ${space.xs}`, background: color.s3, borderRadius: radius.xs,

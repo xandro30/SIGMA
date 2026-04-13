@@ -143,3 +143,46 @@ export const overlay = {
   scrim:  'rgba(0,0,0,0.75)',
   dimmed: 'rgba(0,0,0,0.5)',
 };
+
+// ─── View Selector ───────────────────────────────────────────────────────────
+export const viewSelector = {
+  container: {
+    background: color.s2,
+    borderRadius: radius.lg,
+    padding: '3px',
+    border: `1px solid ${color.border}`,
+    display: 'inline-flex',
+    gap: '2px',
+  },
+  pill: {
+    padding: '4px 12px',
+    borderRadius: radius.md,
+    fontSize: '12px',
+    fontWeight: 600,
+    fontFamily: font.sans,
+    border: 'none',
+    cursor: 'pointer',
+    transition: `all ${motion.fast}`,
+    whiteSpace: 'nowrap',
+  },
+  pillActive: { background: color.yellow, color: '#000' },
+  pillInactive: { background: 'transparent', color: color.text },
+};
+
+// ─── Slide Over ──────────────────────────────────────────────────────────────
+export const slideOver = {
+  width: '420px',
+  background: color.s1,
+  borderLeft: `1px solid ${color.border}`,
+  scrim: 'rgba(0,0,0,0.4)',
+  zIndex: 900,
+};
+
+// ─── Ghost (drag preview / collision) ────────────────────────────────────────
+export const ghost = {
+  background: 'rgba(245,197,24, 0.2)',
+  border: `1px dashed ${color.yellow}`,
+  borderCollision: '1px dashed #EF4444',
+  backgroundCollision: 'rgba(239,68,68, 0.1)',
+  label: { fontFamily: font.mono, fontSize: '10px', color: color.yellow },
+};

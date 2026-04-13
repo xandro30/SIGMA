@@ -30,6 +30,7 @@ input, textarea, select {
   font-weight: 500;
   color: #F0F0F4 !important;
   background: #161618;
+  color-scheme: dark;
   border: 1.5px solid rgba(255,255,255,0.13);
   border-radius: 10px;
   padding: 9px 13px;
@@ -81,6 +82,11 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
   to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+@keyframes scaleInFlex {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(20px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -89,6 +95,11 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
 @keyframes slideInUp {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes shimmer {

@@ -1,9 +1,25 @@
 import { useState } from 'react';
 import { color, font, radius, space, motion } from '../../../shared/tokens';
 import { ChevronLeft, ChevronRight, Calendar, Plus } from '../../../shared/components/Icons';
-import { formatWeekRange } from '../../../shared/dateUtils';
+import { formatWeekRange, formatDayTitle, formatMonthTitle } from '../../../shared/dateUtils';
+import ViewSelector from './ViewSelector';
 
-export default function WeekNav({ weekStart, onPrev, onNext, onTemplate, onNewBlock }) {
+export default function WeekNav({
+  activeView,
+  onViewChange,
+  currentDate,
+  activeCycle,
+  activeCycles,
+  onPrev,
+  onNext,
+  onTemplate,
+  onNewBlock,
+  showActions = true,
+  showNav: showNavProp,
+}) {
+  const title = getTitle(activeView, currentDate, activeCycle);
+  const showNav = showNavProp ?? !activeView.startsWith('cycle:');
+
   return (
     <div style={{
       height: '48px',
@@ -16,9 +32,11 @@ export default function WeekNav({ weekStart, onPrev, onNext, onTemplate, onNewBl
       flexShrink: 0,
     }}>
       {/* Nav arrows + date */}
-      <NavButton onClick={onPrev} aria-label="Semana anterior">
-        <ChevronLeft size="16" />
-      </NavButton>
+      {showNav && (
+        <NavButton onClick={onPrev} aria-label="Anterior">
+          <ChevronLeft size="16" />
+        </NavButton>
+      )}
 
       <h2 style={{
         fontFamily: font.sans,
@@ -28,30 +46,56 @@ export default function WeekNav({ weekStart, onPrev, onNext, onTemplate, onNewBl
         margin: 0,
         whiteSpace: 'nowrap',
         letterSpacing: '-0.01em',
+        minWidth: 0,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
       }}>
-        {formatWeekRange(weekStart)}
+        {title}
       </h2>
 
-      <NavButton onClick={onNext} aria-label="Semana siguiente">
-        <ChevronRight size="16" />
-      </NavButton>
+      {showNav && (
+        <NavButton onClick={onNext} aria-label="Siguiente">
+          <ChevronRight size="16" />
+        </NavButton>
+      )}
+
+      {/* View selector */}
+      <div style={{ marginLeft: space.md }}>
+        <ViewSelector activeView={activeView} onViewChange={onViewChange} activeCycles={activeCycles} />
+      </div>
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Template button */}
-      <ActionButton onClick={onTemplate} variant="secondary">
-        <Calendar size="14" />
-        <span>Template</span>
-      </ActionButton>
+      {/* Actions — only in day/week views */}
+      {showActions && (
+        <>
+          <ActionButton onClick={onTemplate} variant="secondary">
+            <Calendar size="14" />
+            <span>Template</span>
+          </ActionButton>
 
-      {/* New block button */}
-      <ActionButton onClick={onNewBlock} variant="primary">
-        <Plus size="14" />
-        <span>Nuevo bloque</span>
-      </ActionButton>
+          <ActionButton onClick={onNewBlock} variant="primary">
+            <Plus size="14" />
+            <span>Nuevo bloque</span>
+          </ActionButton>
+        </>
+      )}
     </div>
   );
+}
+
+function getTitle(view, date, cycle) {
+  if (view.startsWith('cycle:')) {
+    if (!cycle) return view.replace('cycle:', '');
+    return `${cycle.name} · ${cycle.date_range?.start} — ${cycle.date_range?.end}`;
+  }
+  switch (view) {
+    case 'day': return formatDayTitle(date);
+    case 'week': return formatWeekRange(date);
+    case 'month': return formatMonthTitle(date);
+    default: return formatWeekRange(date);
+  }
 }
 
 function NavButton({ children, ...props }) {
@@ -100,6 +144,7 @@ function ActionButton({ children, variant = 'secondary', ...props }) {
         fontFamily: font.sans,
         fontSize: '13px',
         fontWeight: 600,
+        whiteSpace: 'nowrap',
         cursor: 'pointer',
         transition: `all ${motion.fast}`,
         ...(hov && !isPrimary && { border: `1px solid ${color.borderAccent}` }),

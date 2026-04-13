@@ -33,6 +33,20 @@ export const planningApi = {
   listDayTemplates:   (spaceId) => api.get(`/spaces/${spaceId}/day-templates`).then(r => r.templates),
   listWeekTemplates:  (spaceId) => api.get(`/spaces/${spaceId}/week-templates`).then(r => r.templates),
 
+  // DayTemplate CRUD
+  createDayTemplate:    (spaceId, data) => api.post(`/spaces/${spaceId}/day-templates`, data),
+  getDayTemplate:       (spaceId, templateId) => api.get(`/spaces/${spaceId}/day-templates/${templateId}`),
+  updateDayTemplate:    (spaceId, templateId, data) => api.put(`/spaces/${spaceId}/day-templates/${templateId}`, data),
+  deleteDayTemplate:    (spaceId, templateId) => api.delete(`/spaces/${spaceId}/day-templates/${templateId}`),
+  applyDayTemplate:     (spaceId, templateId, data) => api.post(`/spaces/${spaceId}/day-templates/${templateId}/apply`, data),
+
+  // WeekTemplate CRUD
+  createWeekTemplate:   (spaceId, data) => api.post(`/spaces/${spaceId}/week-templates`, data),
+  getWeekTemplate:      (spaceId, templateId) => api.get(`/spaces/${spaceId}/week-templates/${templateId}`),
+  deleteWeekTemplate:   (spaceId, templateId) => api.delete(`/spaces/${spaceId}/week-templates/${templateId}`),
+  setWeekTemplateSlot:  (spaceId, templateId, weekday, data) => api.put(`/spaces/${spaceId}/week-templates/${templateId}/slots/${weekday}`, data),
+  clearWeekTemplateSlot:(spaceId, templateId, weekday) => api.delete(`/spaces/${spaceId}/week-templates/${templateId}/slots/${weekday}`),
+
   // Capacity + ETA
   getCapacity:        (spaceId) => api.get(`/spaces/${spaceId}/capacity`),
   getCardEta:         (cardId, refDate) => api.get(`/cards/${cardId}/eta?reference_date=${refDate}`),

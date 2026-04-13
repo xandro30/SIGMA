@@ -49,7 +49,7 @@ function AreaCard({ area, allCards, onClick, onEye }) {
 
       {/* Stats */}
       <div onClick={onClick} style={{ display: 'flex', gap: '10px', cursor: 'pointer' }}>
-        {[{ l: 'CARDS', v: areaCards.length, c: color.text }, { l: 'ACTIVAS', v: activeCards, c: hex }].map(({ l, v, c }) => (
+        {[{ l: 'TARJETAS', v: areaCards.length, c: color.text }, { l: 'ACTIVAS', v: activeCards, c: hex }].map(({ l, v, c }) => (
           <div key={l} style={{ background: color.s2, border: `1px solid ${color.border}`, borderRadius: '8px', padding: '8px 12px', flex: 1, textAlign: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 800, color: c, fontFamily: font.mono }}>{v}</div>
             <div style={{ fontSize: '10px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.08em', marginTop: '2px' }}>{l}</div>

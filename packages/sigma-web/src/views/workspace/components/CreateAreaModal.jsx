@@ -4,8 +4,10 @@ import SectionLabel from "../../../shared/components/SectionLabel";
 import ColorPicker from "../../../shared/components/ColorPicker";
 import { useCreateArea } from "../../../entities/area/hooks/useAreas";
 import { useUIStore } from "../../../shared/store/useUIStore";
+import { useEscapeKey } from "../../../shared/hooks/useEscapeKey";
 export default function CreateAreaModal() {
   const closeModal = useUIStore((s) => s.closeCreateArea);
+  useEscapeKey(closeModal);
   const { mutate: createArea, isPending } = useCreateArea();
   const [name, setName]       = useState("");
   const [colorId, setColorId] = useState("coral");
