@@ -28,7 +28,7 @@ export default function SprintView({ spaceId, activeCycle, areas, onDayClick }) 
           background: color.yellowDim, display: 'flex',
           alignItems: 'center', justifyContent: 'center', fontSize: '22px',
         }}>
-          🏃
+          <span role="img" aria-label="sprint">🏃</span>
         </div>
         <span style={{ fontFamily: font.sans, fontSize: '15px', fontWeight: 600, color: color.text }}>
           Sin sprint activo
@@ -73,6 +73,7 @@ export default function SprintView({ spaceId, activeCycle, areas, onDayClick }) 
           return (
             <button
               key={date}
+              aria-label={`${dayNameShort(date)} ${dayOfMonth(date)}, ${totalMin > 0 ? Math.floor(totalMin/60) + 'h' : 'sin bloques'}`}
               onClick={() => onDayClick(date)}
               style={{
                 display: 'flex', alignItems: 'center', gap: space.md,

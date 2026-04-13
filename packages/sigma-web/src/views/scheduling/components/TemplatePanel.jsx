@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { color, font, radius, space, elevation, motion, slideOver } from '../../../shared/tokens';
 import { X } from '../../../shared/components/Icons';
 import { useEscapeKey } from '../../../shared/hooks/useEscapeKey';
@@ -13,6 +13,28 @@ const TABS = [
 export default function TemplatePanel({ spaceId, areas, weekStart, onClose, onApplied }) {
   useEscapeKey(onClose);
   const [activeTab, setActiveTab] = useState('day');
+  const panelRef = useRef(null);
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusable = panel.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first.focus();
+    const trap = (e) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    panel.addEventListener('keydown', trap);
+    return () => panel.removeEventListener('keydown', trap);
+  }, [activeTab]);
 
   return (
     <>
@@ -27,7 +49,7 @@ export default function TemplatePanel({ spaceId, areas, weekStart, onClose, onAp
       />
 
       {/* Panel */}
-      <div style={{
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Panel de plantillas" style={{
         position: 'fixed', top: '56px', right: 0, bottom: 0,
         width: slideOver.width, maxWidth: '100vw',
         background: slideOver.background,
@@ -52,6 +74,7 @@ export default function TemplatePanel({ spaceId, areas, weekStart, onClose, onAp
           </h3>
           <button
             type="button" onClick={onClose}
+            aria-label="Cerrar panel de plantillas"
             style={{ background: 'none', border: 'none', color: color.muted, cursor: 'pointer', padding: space.xs }}
           >
             <X size="18" />
@@ -59,7 +82,7 @@ export default function TemplatePanel({ spaceId, areas, weekStart, onClose, onAp
         </div>
 
         {/* Tabs */}
-        <div style={{
+        <div role="tablist" style={{
           display: 'flex', gap: '2px', padding: `${space.sm} ${space.xl}`,
           borderBottom: `1px solid ${color.border}`,
           flexShrink: 0,
@@ -67,6 +90,10 @@ export default function TemplatePanel({ spaceId, areas, weekStart, onClose, onAp
           {TABS.map(tab => (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              id={`tab-${tab.id}`}
+              aria-controls={`tabpanel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               style={{
                 flex: 1, padding: `${space.sm} ${space.md}`,
@@ -84,7 +111,7 @@ export default function TemplatePanel({ spaceId, areas, weekStart, onClose, onAp
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto' }}>
+        <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} style={{ flex: 1, overflow: 'auto' }}>
           {activeTab === 'day' && (
             <DayTemplateList spaceId={spaceId} areas={areas} onApplied={onApplied} />
           )}

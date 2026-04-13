@@ -36,12 +36,12 @@ export default function MonthView({ monthDate, spaceId, areas, onDayClick }) {
       overflow: 'hidden', padding: space.lg,
     }}>
       {/* Weekday headers */}
-      <div style={{
+      <div role="row" style={{
         display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
         gap: '1px', marginBottom: space.sm,
       }}>
         {WEEKDAY_HEADERS.map(name => (
-          <div key={name} style={{
+          <div key={name} role="columnheader" style={{
             textAlign: 'center', fontFamily: font.mono,
             fontSize: '10px', fontWeight: 700, color: color.muted2,
             letterSpacing: '0.08em', padding: `${space.xs} 0`,
@@ -52,12 +52,12 @@ export default function MonthView({ monthDate, spaceId, areas, onDayClick }) {
       </div>
 
       {/* Calendar grid */}
-      <div style={{
+      <div role="grid" aria-label="Calendario mensual" style={{
         flex: 1, display: 'grid', gridTemplateRows: 'repeat(6, 1fr)',
         gap: '1px',
       }}>
         {rows.map((row, ri) => (
-          <div key={ri} style={{
+          <div key={ri} role="row" style={{
             display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
             gap: '1px',
           }}>
@@ -71,6 +71,7 @@ export default function MonthView({ monthDate, spaceId, areas, onDayClick }) {
               return (
                 <button
                   key={date}
+                  aria-label={`${dayOfMonth(date)}, ${blockCount} bloques`}
                   onClick={() => onDayClick(date)}
                   style={{
                     display: 'flex', flexDirection: 'column',

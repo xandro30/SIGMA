@@ -126,6 +126,7 @@ export default function CycleOverview({ spaceId, cycle, areas, onWeekClick }) {
           return (
             <button
               key={week.monday}
+              aria-label={`Semana ${week.weekNumber}, ${hoursLabel || 'sin datos'}`}
               onClick={() => onWeekClick(week.monday)}
               style={{
                 display: 'flex', alignItems: 'center', gap: space.md,
@@ -162,7 +163,7 @@ export default function CycleOverview({ spaceId, cycle, areas, onWeekClick }) {
                 height: '28px', gap: 0,
               }}>
                 {segments.length > 0 ? (
-                  <div style={{
+                  <div role="img" aria-label={`${hoursLabel} planificadas`} style={{
                     display: 'flex', height: '24px',
                     width: `${Math.max(barWidthPct, 3)}%`,
                     borderRadius: '4px', overflow: 'hidden',

@@ -30,6 +30,7 @@ export default function ViewSelector({ activeView, onViewChange, activeCycles })
       {views.map(v => (
         <button
           key={v.id}
+          aria-current={activeView === v.id ? 'page' : undefined}
           onClick={() => onViewChange(v.id)}
           style={{
             ...vs.pill,

@@ -3,6 +3,9 @@ import { ghost as g } from '../../../shared/tokens';
 export default function GhostBlock({ top, height, label, hasOverlap }) {
   return (
     <div
+      role="status"
+      aria-live="polite"
+      aria-label={label || 'Creando bloque'}
       style={{
         position: 'absolute',
         top,

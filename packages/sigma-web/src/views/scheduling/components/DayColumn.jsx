@@ -15,6 +15,7 @@ export default function DayColumn({ date, day, areas, onBlockClick, onMouseDown,
 
   return (
     <div
+      aria-label={`Horario del dia. ${onMouseDown ? 'Click o arrastra para crear bloque' : ''}`}
       style={{
         flex: 1,
         minWidth: 0,

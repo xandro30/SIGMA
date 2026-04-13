@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { color, font, radius, space, elevation, motion, overlay } from '../../../shared/tokens';
 import { X } from '../../../shared/components/Icons';
 import { useEscapeKey } from '../../../shared/hooks/useEscapeKey';
@@ -30,6 +30,31 @@ function diffMinutes(startDtLocal, endDtLocal) {
 
 export default function BlockEditModal({ block, areas, onSave, onDelete, onClose }) {
   useEscapeKey(onClose);
+
+  // Focus trap (WCAG 2.4.3)
+  const modalRef = useRef(null);
+  useEffect(() => {
+    const modal = modalRef.current;
+    if (!modal) return;
+    const focusable = modal.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first.focus();
+    const trap = (e) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    modal.addEventListener('keydown', trap);
+    return () => modal.removeEventListener('keydown', trap);
+  }, []);
+
   const isNew = !block?.id;
   const [startAt, setStartAt] = useState(() => toDatetimeLocal(block?.start_at));
   const [duration, setDuration] = useState(block?.duration ?? 60);
@@ -90,6 +115,10 @@ export default function BlockEditModal({ block, areas, onSave, onDelete, onClose
 
       {/* Panel */}
       <form
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="block-modal-title"
         onSubmit={handleSubmit}
         style={{
           position: 'relative',
@@ -109,7 +138,7 @@ export default function BlockEditModal({ block, areas, onSave, onDelete, onClose
       >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{
+          <h3 id="block-modal-title" style={{
             fontFamily: font.sans,
             fontSize: '15px',
             fontWeight: 700,
