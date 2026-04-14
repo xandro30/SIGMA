@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, useSensor, useSensors, useDroppable,
@@ -152,21 +152,24 @@ function KanbanCard({
       </div>
 
       {/* Tracking footer — NOT a drag zone */}
-      <div onPointerDown={e => e.stopPropagation()}>
+      <div onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
         {!hasSession && (
-          <div
+          <button
             onClick={onStartWork}
             style={{
-              borderTop: `1px solid ${color.border}`,
-              padding:   '7px 12px',
-              textAlign: 'center',
-              cursor:    'pointer',
+              width:      '100%',
+              background: 'none',
+              border:     'none',
+              borderTop:  `1px solid ${color.border}`,
+              padding:    '7px 12px',
+              textAlign:  'center',
+              cursor:     'pointer',
             }}
           >
             <span style={{ color: color.muted, fontSize: '11px', fontWeight: 600, fontFamily: font.sans }}>
               ▶ Start Work
             </span>
-          </div>
+          </button>
         )}
 
         {isWorking && (
@@ -361,17 +364,32 @@ export default function KanbanBoard({ space, cards, areas }) {
   );
 
   // ── Timer ──────────────────────────────────────────────────────────────────
-  const timerInitialSeconds = activeSession
-    ? (activeSession.state === 'working'
-        ? activeSession.work_minutes * 60
-        : activeSession.break_minutes * 60)
-    : null;
 
-  // Recovery from page reload: recalculate elapsed time
-  const recoveryDoneRef = useRef(false);
+  // Fix: calculate remaining seconds (not full duration) so timer is correct after page reload
+  const timerInitialSeconds = useMemo(() => {
+    if (!activeSession) return null;
+    const total = activeSession.state === 'working'
+      ? activeSession.work_minutes * 60
+      : activeSession.break_minutes * 60;
+    if (!activeSession.current_started_at) return total;
+    const elapsed = Math.floor(
+      (Date.now() - new Date(activeSession.current_started_at).getTime()) / 1000
+    );
+    return Math.max(0, total - elapsed);
+  // Recompute only when a new round/state starts (id or state change)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSession?.id, activeSession?.state]);
+
+  // Fix: guard setState on unmounted component
+  const isMountedRef = useRef(true);
+  useEffect(() => () => { isMountedRef.current = false; }, []);
+
+  // Recovery from page reload: if session already expired, call the right transition
+  // Fix: reset per space so switching spaces doesn't skip recovery
+  const recoveryDoneRef = useRef(null); // stores the session id that was recovered
   useEffect(() => {
-    if (!activeSession || recoveryDoneRef.current) return;
-    recoveryDoneRef.current = true;
+    if (!activeSession || recoveryDoneRef.current === activeSession.id) return;
+    recoveryDoneRef.current = activeSession.id;
     if (!activeSession.current_started_at) return;
 
     const elapsed = Math.floor((Date.now() - new Date(activeSession.current_started_at).getTime()) / 1000);
@@ -390,10 +408,12 @@ export default function KanbanBoard({ space, cards, areas }) {
     timerInitialSeconds,
     () => {
       if (activeSession?.state === 'working') {
+        // Fix: determine last round before calling completeRound (don't rely on return value
+        // which may be undefined if the endpoint returns 204 No Content)
+        const isLastRound = (activeSession.current_round ?? 1) >= (activeSession.num_rounds ?? 4);
         completeRound(undefined, {
-          onSuccess: (updated) => {
-            // null / completed state → session ended, show banner
-            if (!updated || updated.state === 'completed') {
+          onSuccess: () => {
+            if (isLastRound && isMountedRef.current) {
               const totalMinutes = (activeSession.work_minutes ?? 25) * (activeSession.num_rounds ?? 4);
               setCompletedBanner({ cardId: activeSession.card_id, minutes: totalMinutes });
             }
@@ -575,8 +595,12 @@ export default function KanbanBoard({ space, cards, areas }) {
       {startModalCard && (
         <StartWorkModal
           card={startModalCard}
-          onConfirm={(data) => {
-            startSession({ ...data, card_id: startModalCard.id });
+          onConfirm={({ description, work_minutes, break_minutes, num_rounds }) => {
+            startSession({
+              card_id:     startModalCard.id,
+              description,
+              timer: { work_minutes, break_minutes, num_rounds },
+            });
             setStartModalCard(null);
           }}
           onClose={() => setStartModalCard(null)}

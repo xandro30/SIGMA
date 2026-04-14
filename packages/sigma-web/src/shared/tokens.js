@@ -21,11 +21,11 @@ export const color = {
   yellowDim:  'rgba(245,197,24,0.15)',
   yellowGlow: 'rgba(245,197,24,0.08)',
 
-  // Break state accent
-  blue:       '#3a7bd5',
-  blueDim:    'rgba(58,123,213,0.15)',
-  blueGlow:   'rgba(58,123,213,0.08)',
-  blueBorder: 'rgba(58,123,213,0.25)',
+  // Break state accent — #4a8fe0 passes 4.5:1 WCAG AA on all card surfaces
+  blue:       '#4a8fe0',
+  blueDim:    'rgba(74,143,224,0.15)',
+  blueGlow:   'rgba(74,143,224,0.08)',
+  blueBorder: 'rgba(74,143,224,0.25)',
 
   // Success / completed
   green:    '#10B981',

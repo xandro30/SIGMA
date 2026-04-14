@@ -93,18 +93,21 @@ export default function StartWorkModal({ card, onConfirm, onClose }) {
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form id="start-work-form" onSubmit={handleSubmit} style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
           {/* Description field */}
           <div>
-            <p style={labelStyle}>Trabajo a realizar</p>
+            <label htmlFor="start-work-desc" style={labelStyle}>Trabajo a realizar</label>
             <textarea
+              id="start-work-desc"
               ref={textareaRef}
               value={description}
               onChange={e => { setDescription(e.target.value); if (e.target.value.trim()) setDescError(false); }}
               placeholder="Describe el trabajo de esta sesión…"
               rows={3}
               required
+              aria-describedby={descError ? 'start-work-desc-error' : undefined}
+              aria-invalid={descError || undefined}
               style={{
                 resize:      'vertical',
                 borderColor: descError ? '#ef4444' : undefined,
@@ -112,7 +115,7 @@ export default function StartWorkModal({ card, onConfirm, onClose }) {
               }}
             />
             {descError && (
-              <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#ef4444', fontFamily: font.sans }}>
+              <p id="start-work-desc-error" role="alert" style={{ margin: '4px 0 0', fontSize: '10px', color: '#ef4444', fontFamily: font.sans }}>
                 Requerido — describe el trabajo a realizar
               </p>
             )}
@@ -120,9 +123,9 @@ export default function StartWorkModal({ card, onConfirm, onClose }) {
 
           {/* Timer config row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-            <NumField label="Trabajo (min)" value={workMinutes}  onChange={setWorkMinutes}  min={1} />
-            <NumField label="Descanso (min)" value={breakMinutes} onChange={setBreakMinutes} min={0} />
-            <NumField label="Rondas"         value={numRounds}    onChange={setNumRounds}    min={1} />
+            <NumField id="sw-work-min"   label="Trabajo (min)"  value={workMinutes}  onChange={setWorkMinutes}  min={1} />
+            <NumField id="sw-break-min"  label="Descanso (min)" value={breakMinutes} onChange={setBreakMinutes} min={0} />
+            <NumField id="sw-rounds"     label="Rondas"         value={numRounds}    onChange={setNumRounds}    min={1} />
           </div>
         </form>
 
@@ -145,7 +148,7 @@ export default function StartWorkModal({ card, onConfirm, onClose }) {
           </button>
           <button
             type="submit"
-            form=""
+            form="start-work-form"
             onClick={handleSubmit}
             disabled={!description.trim()}
             style={{
@@ -169,11 +172,12 @@ export default function StartWorkModal({ card, onConfirm, onClose }) {
   );
 }
 
-function NumField({ label, value, onChange, min }) {
+function NumField({ label, id, value, onChange, min }) {
   return (
     <div>
-      <p style={labelStyle}>{label}</p>
+      <label htmlFor={id} style={labelStyle}>{label}</label>
       <input
+        id={id}
         type="number"
         value={value}
         min={min}
@@ -187,7 +191,7 @@ function NumField({ label, value, onChange, min }) {
 const labelStyle = {
   margin: '0 0 6px',
   fontSize: '9px',
-  color: color.muted2,
+  color: color.muted,
   fontFamily: font.mono,
   letterSpacing: '0.1em',
   textTransform: 'uppercase',

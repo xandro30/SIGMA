@@ -126,7 +126,7 @@ export default function WorkLogSection({ cardId, spaceId, workLog }) {
               opacity:      isPending ? 0.55 : 1,
             }}
           >
-            ＋ Registrar
+            + Registrar
           </button>
         </div>
       </form>
@@ -137,7 +137,7 @@ export default function WorkLogSection({ cardId, spaceId, workLog }) {
           <ul role="list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {sorted.map((entry, i) => (
               <li
-                key={i}
+                key={entry.id ?? `${entry.logged_at}-${i}`}
                 role="listitem"
                 style={{
                   display:      'flex',
@@ -192,7 +192,7 @@ export default function WorkLogSection({ cardId, spaceId, workLog }) {
 const sectionLabelStyle = {
   margin: '0 0 10px',
   fontSize: '9px',
-  color: color.muted2,
+  color: color.muted,
   fontFamily: font.mono,
   letterSpacing: '0.1em',
   textTransform: 'uppercase',
@@ -203,7 +203,7 @@ const fieldLabelStyle = {
   display: 'block',
   marginBottom: '4px',
   fontSize: '9px',
-  color: color.muted2,
+  color: color.muted,
   fontFamily: font.mono,
   letterSpacing: '0.08em',
   textTransform: 'uppercase',

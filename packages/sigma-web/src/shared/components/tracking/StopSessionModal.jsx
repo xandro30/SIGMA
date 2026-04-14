@@ -28,6 +28,7 @@ export default function StopSessionModal({ card, minutesWorked, onSave, onDiscar
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="stop-session-title"
+        aria-describedby="stop-session-desc"
         tabIndex={-1}
         style={{
           position:     'fixed',
@@ -48,7 +49,7 @@ export default function StopSessionModal({ card, minutesWorked, onSave, onDiscar
         <p id="stop-session-title" style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 600, color: color.text, fontFamily: font.sans }}>
           Detener sesión
         </p>
-        <p style={{ margin: '0 0 14px', fontSize: '11px', color: color.muted, fontFamily: font.sans }}>
+        <p id="stop-session-desc" style={{ margin: '0 0 14px', fontSize: '11px', color: color.muted, fontFamily: font.sans }}>
           {subtitle} · {minLabel}
         </p>
 

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
-export const useUIStore = create((set) => ({
+export const useUIStore = create((set) => {
+  if (import.meta.env.DEV) setTimeout(() => { window.__UI_STORE__ = useUIStore; }, 0);
+  return {
   // Space activo
   activeSpaceId:    null,
   setActiveSpaceId: (id) => set({ activeSpaceId: id }),
@@ -26,4 +28,5 @@ export const useUIStore = create((set) => ({
   // Metrics — selected cycle id
   activeCycleId: null,
   setActiveCycleId: (id) => set({ activeCycleId: id }),
-}));
+  };
+});
