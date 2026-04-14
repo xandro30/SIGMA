@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { color, font, elevation, motion, radius, priority as pt, getAreaHex, BEGIN_ID, FINISH_ID } from "../tokens";
 import PriorityBadge from "./PriorityBadge";
+import WorkLogSection from "./tracking/WorkLogSection";
 
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-export default function CardModal({ card, areas, space, onClose, onMove, onPromote, onDemote }) {
+export default function CardModal({ card, areas, space, spaceId, onClose, onMove, onPromote, onDemote }) {
   const [showMoveModal,   setShowMoveModal]   = useState(false);
   const [showDemoteModal, setShowDemoteModal] = useState(false);
 
@@ -231,6 +232,12 @@ export default function CardModal({ card, areas, space, onClose, onMove, onPromo
               </ul>
             </Section>
           )}
+          {/* Work log */}
+          <WorkLogSection
+            cardId={card.id}
+            spaceId={spaceId}
+            workLog={card.work_log ?? []}
+          />
         </div>
       </div>
 

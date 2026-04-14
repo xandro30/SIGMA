@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { color, font, priority as pt, getAreaHex } from '../../tokens';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useUIStore } from '../../store/useUIStore';
+import WorkLogSection from '../tracking/WorkLogSection';
 import { useSpaces } from '../../../entities/space/hooks/useSpaces';
 import { useAreas } from '../../../entities/area/hooks/useAreas';
 import { useProjects } from '../../../entities/project/hooks/useProjects';
@@ -248,6 +249,18 @@ export default function EditCardModal({ card, onClose }) {
               </select>
             </div>
           </Section>
+
+          {/* Work log */}
+          <div style={{ border: `1px solid ${color.border}`, borderRadius: '10px', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ padding: '10px 14px', background: color.s2 }}>
+              <span style={{ fontSize: '11px', color: color.muted, fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Vitácora de trabajo
+              </span>
+            </div>
+            <div style={{ padding: '14px', background: color.s1 }}>
+              <WorkLogSection cardId={card.id} spaceId={activeSpaceId} workLog={card.work_log ?? []} />
+            </div>
+          </div>
 
         </div>
 

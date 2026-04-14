@@ -20,6 +20,16 @@ export const color = {
   yellow:     '#F5C518',
   yellowDim:  'rgba(245,197,24,0.15)',
   yellowGlow: 'rgba(245,197,24,0.08)',
+
+  // Break state accent
+  blue:       '#3a7bd5',
+  blueDim:    'rgba(58,123,213,0.15)',
+  blueGlow:   'rgba(58,123,213,0.08)',
+  blueBorder: 'rgba(58,123,213,0.25)',
+
+  // Success / completed
+  green:    '#10B981',
+  greenDim: 'rgba(16,185,129,0.12)',
 };
 
 // ─── Typography ───────────────────────────────────────────────────────────────

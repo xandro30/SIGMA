@@ -103,6 +103,11 @@ button:disabled { cursor: not-allowed; opacity: 0.38; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
 @keyframes slideInFromRight {
   from { opacity: 0; transform: translateX(30px); }
   to   { opacity: 1; transform: translateX(0); }

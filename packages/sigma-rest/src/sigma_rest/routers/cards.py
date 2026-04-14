@@ -27,13 +27,14 @@ from sigma_core.task_management.application.use_cases.card.assign_epic import As
 from sigma_core.task_management.application.use_cases.card.assign_size import AssignSize, AssignSizeCommand
 from sigma_core.task_management.application.use_cases.card.start_timer import StartTimer, StartTimerCommand
 from sigma_core.task_management.application.use_cases.card.stop_timer import StopTimer, StopTimerCommand
+from sigma_core.task_management.application.use_cases.card.add_work_log_entry import AddWorkLogEntry, AddWorkLogEntryCommand
 
 from sigma_rest.schemas.card_schemas import (
     CreateCardRequest, UpdateCardRequest, MoveCardRequest,
     PromoteCardRequest, DemoteCardRequest, LabelActionRequest,
     TopicActionRequest, UrlActionRequest, AddChecklistItemRequest,
     AddRelatedCardRequest, AssignAreaRequest, AssignProjectRequest, AssignEpicRequest,
-    AssignSizeRequest, MoveTriageStageRequest, StartTimerRequest, CardResponse,
+    AssignSizeRequest, MoveTriageStageRequest, StartTimerRequest, AddWorkLogRequest, CardResponse,
 )
 from sigma_rest.mappers.card_mappers import card_to_response
 from sigma_rest.dependencies import get_card_repo, get_space_repo, get_area_repo, get_project_repo, get_epic_repo
@@ -386,3 +387,15 @@ async def stop_timer(
     ))
     card = await _get_card_or_raise(card_repo, CardId(card_id))
     return card_to_response(card)
+
+@router.post("/cards/{card_id}/work-log", status_code=204)
+async def add_work_log(
+    card_id: str,
+    body: AddWorkLogRequest,
+    card_repo=Depends(get_card_repo),
+):
+    await AddWorkLogEntry(card_repo).execute(AddWorkLogEntryCommand(
+        card_id=CardId(card_id),
+        description=body.description,
+        minutes=body.minutes,
+    ))

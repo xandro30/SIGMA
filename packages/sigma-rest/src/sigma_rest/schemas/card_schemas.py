@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CreateCardRequest(BaseModel):
@@ -84,6 +84,11 @@ class AssignSizeRequest(BaseModel):
 
 class StartTimerRequest(BaseModel):
     description: str = ""
+
+
+class AddWorkLogRequest(BaseModel):
+    description: str
+    minutes: int = Field(gt=0)
 
 
 class ChecklistItemResponse(BaseModel):
