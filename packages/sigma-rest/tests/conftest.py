@@ -20,8 +20,10 @@ from sigma_rest.dependencies import (
     get_metrics_space_reader,
     get_space_reader,
     get_space_repo,
+    get_tracking_entry_repo,
     get_week_repo,
     get_week_template_repo,
+    get_work_session_repo,
 )
 from sigma_core.planning.domain.read_models.card_view import CardView
 from sigma_core.planning.domain.read_models.space_view import SpaceView
@@ -37,6 +39,8 @@ from fakes.fake_day_repository import FakeDayRepository  # type: ignore[import]
 from fakes.fake_day_template_repository import FakeDayTemplateRepository  # type: ignore[import]
 from fakes.fake_week_repository import FakeWeekRepository  # type: ignore[import]
 from fakes.fake_week_template_repository import FakeWeekTemplateRepository  # type: ignore[import]
+from fakes.fake_work_session_repository import FakeWorkSessionRepository  # type: ignore[import]
+from fakes.fake_tracking_entry_repository import FakeTrackingEntryRepository  # type: ignore[import]
 
 
 class _RepoBackedCardReader:
@@ -238,6 +242,16 @@ class _RepoBackedMetricsCycleReader:
 
 
 @pytest.fixture
+def work_session_repo():
+    return FakeWorkSessionRepository()
+
+
+@pytest.fixture
+def tracking_entry_repo():
+    return FakeTrackingEntryRepository()
+
+
+@pytest.fixture
 def cycle_summary_repo():
     return _FakeCycleSummaryRepo()
 
@@ -279,6 +293,8 @@ async def client(
     metrics_card_reader,
     metrics_space_reader,
     metrics_cycle_reader,
+    work_session_repo,
+    tracking_entry_repo,
 ):
     app.dependency_overrides[get_card_repo]  = lambda: card_repo
     app.dependency_overrides[get_space_repo] = lambda: space_repo
@@ -295,6 +311,8 @@ async def client(
     app.dependency_overrides[get_metrics_card_reader] = lambda: metrics_card_reader
     app.dependency_overrides[get_metrics_space_reader] = lambda: metrics_space_reader
     app.dependency_overrides[get_metrics_cycle_reader] = lambda: metrics_cycle_reader
+    app.dependency_overrides[get_work_session_repo] = lambda: work_session_repo
+    app.dependency_overrides[get_tracking_entry_repo] = lambda: tracking_entry_repo
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
         base_url="http://test",

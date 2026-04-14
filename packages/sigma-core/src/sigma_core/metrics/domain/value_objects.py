@@ -101,6 +101,7 @@ class MetricsBlock:
     avg_cycle_time_minutes: float | None
     avg_lead_time_minutes: float | None
     consumed_minutes: int
+    actual_consumed_minutes: int
     calibration_entries: list[CalibrationEntry]
 
 

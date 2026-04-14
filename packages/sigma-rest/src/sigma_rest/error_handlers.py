@@ -8,6 +8,8 @@ from sigma_core.planning.application.error_handlers import (
 from sigma_core.planning.domain.errors import PlanningDomainError
 from sigma_core.task_management.application.error_handlers import handle_domain_error
 from sigma_core.shared_kernel.errors import SigmaDomainError
+from sigma_core.tracking.application.error_handlers import handle_tracking_error
+from sigma_core.tracking.domain.errors import TrackingDomainError
 
 
 async def domain_error_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -65,6 +67,26 @@ async def metrics_domain_error_handler(
             f"got {type(exc).__name__}"
         )
     result = handle_metrics_error(exc)
+    return JSONResponse(
+        status_code=result.status_code,
+        content={
+            "error": result.code,
+            "message": result.message,
+            "detail": result.detail,
+        },
+    )
+
+
+async def tracking_domain_error_handler(
+    request: Request, exc: Exception
+) -> JSONResponse:
+    """Handler para errores del BC tracking."""
+    if not isinstance(exc, TrackingDomainError):
+        raise TypeError(
+            "tracking_domain_error_handler expects TrackingDomainError, "
+            f"got {type(exc).__name__}"
+        )
+    result = handle_tracking_error(exc)
     return JSONResponse(
         status_code=result.status_code,
         content={

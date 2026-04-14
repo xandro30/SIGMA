@@ -199,12 +199,12 @@ def test_space_round_trip_con_size_mapping():
 # Esto está garantizado por el reset de datos en cada deploy v2.
 
 
-def test_card_from_dict_sin_campos_v2_falla_fast():
+def test_card_from_dict_sin_size_devuelve_none():
     data = card_to_dict(_make_card())
     del data["size"]
 
-    with pytest.raises(KeyError):
-        card_from_dict(data)
+    card = card_from_dict(data)
+    assert card.size is None
 
 
 def test_card_from_dict_sin_actual_time_falla_fast():
@@ -215,12 +215,12 @@ def test_card_from_dict_sin_actual_time_falla_fast():
         card_from_dict(data)
 
 
-def test_card_from_dict_sin_timer_started_at_falla_fast():
+def test_card_from_dict_sin_timer_started_at_devuelve_none():
     data = card_to_dict(_make_card())
     del data["timer_started_at"]
 
-    with pytest.raises(KeyError):
-        card_from_dict(data)
+    card = card_from_dict(data)
+    assert card.timer_started_at is None
 
 
 def test_card_to_dict_serializa_entered_workflow_at_none_por_defecto():

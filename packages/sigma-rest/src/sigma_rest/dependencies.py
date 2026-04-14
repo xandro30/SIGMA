@@ -47,6 +47,8 @@ from sigma_core.task_management.infrastructure.firestore.space_repository import
 from sigma_core.task_management.infrastructure.firestore.area_repository import FirestoreAreaRepository
 from sigma_core.task_management.infrastructure.firestore.project_repository import FirestoreProjectRepository
 from sigma_core.task_management.infrastructure.firestore.epic_repository import FirestoreEpicRepository
+from sigma_core.tracking.infrastructure.firestore.work_session_repository import FirestoreWorkSessionRepository
+from sigma_core.tracking.infrastructure.firestore.tracking_entry_repository import FirestoreTrackingEntryRepository
 
 
 @lru_cache
@@ -137,3 +139,14 @@ def get_metrics_space_reader() -> FirestoreMetricsSpaceReader:
 
 def get_metrics_cycle_reader() -> FirestoreMetricsCycleReader:
     return FirestoreMetricsCycleReader(get_client())
+
+
+# ── Tracking BC ───────────────────────────────────────────────────
+
+
+def get_work_session_repo() -> FirestoreWorkSessionRepository:
+    return FirestoreWorkSessionRepository(get_client())
+
+
+def get_tracking_entry_repo() -> FirestoreTrackingEntryRepository:
+    return FirestoreTrackingEntryRepository(get_client())

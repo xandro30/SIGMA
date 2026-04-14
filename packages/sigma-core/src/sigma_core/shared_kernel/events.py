@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Protocol
 
 from sigma_core.planning.domain.value_objects import CycleId, DateRange
-from sigma_core.shared_kernel.value_objects import SpaceId, Timestamp
+from sigma_core.shared_kernel.value_objects import AreaId, CardId, SpaceId, Timestamp
+from sigma_core.task_management.domain.value_objects import EpicId, ProjectId
 
 
 # ── Base ──────────────────────────────────────────────────────────
@@ -37,6 +38,20 @@ class CycleClosed(DomainEvent):
     cycle_id: CycleId
     space_id: SpaceId
     date_range: DateRange
+
+
+@dataclass(frozen=True)
+class WorkSessionCompleted(DomainEvent):
+    """Emitido por WorkSession.complete() o .stop(save=True).
+    Contrato inter-BC tracking → task_management."""
+
+    space_id: SpaceId
+    card_id: CardId
+    area_id: AreaId | None
+    project_id: ProjectId | None
+    epic_id: EpicId | None
+    description: str
+    minutes: int
 
 
 # ── EventBus ──────────────────────────────────────────────────────

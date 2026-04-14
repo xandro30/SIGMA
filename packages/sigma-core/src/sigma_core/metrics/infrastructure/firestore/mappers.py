@@ -90,6 +90,7 @@ def _block_from_dict(data: dict[str, Any]) -> MetricsBlock:
         avg_cycle_time_minutes=data["avg_cycle_time_minutes"],
         avg_lead_time_minutes=data["avg_lead_time_minutes"],
         consumed_minutes=data["consumed_minutes"],
+        actual_consumed_minutes=data.get("actual_consumed_minutes", 0),
         calibration_entries=[
             CalibrationEntry(
                 card_id=CardId(e["card_id"]),

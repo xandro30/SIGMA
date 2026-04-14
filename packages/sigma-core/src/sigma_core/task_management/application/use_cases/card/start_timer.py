@@ -12,6 +12,7 @@ from sigma_core.task_management.domain.ports.card_repository import CardReposito
 class StartTimerCommand:
     card_id: CardId
     now: Timestamp
+    description: str = ""
 
 
 class StartTimer:
@@ -43,5 +44,5 @@ class StartTimer:
                     active_card_id=other.id.value,
                 )
 
-        card.start_timer(cmd.now)
+        card.start_timer(cmd.now, cmd.description)
         await self._card_repo.save(card)

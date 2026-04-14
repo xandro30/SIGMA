@@ -12,6 +12,7 @@ class MetricsBlockResponse(BaseModel):
     avg_cycle_time_minutes: float | None = None
     avg_lead_time_minutes: float | None = None
     consumed_minutes: int
+    actual_consumed_minutes: int
     calibration_entries: list[CalibrationEntryResponse]
 
 

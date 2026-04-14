@@ -46,6 +46,34 @@ SIZE_MAP = {"m": 120, "s": 60, "l": 240}
 calculator = MetricsCalculator()
 
 
+class TestActualConsumedMinutes:
+    def test_actual_consumed_sums_actual_time_minutes(self):
+        cards = [_card(actual_time=50), _card(actual_time=30)]
+        block, _ = calculator.calculate(cards, {}, SIZE_MAP)
+        assert block.actual_consumed_minutes == 80
+
+    def test_actual_consumed_zero_when_no_timer_used(self):
+        cards = [_card(actual_time=0), _card(actual_time=0)]
+        block, _ = calculator.calculate(cards, {}, SIZE_MAP)
+        assert block.actual_consumed_minutes == 0
+
+    def test_actual_consumed_partial_when_some_cards_have_timer(self):
+        cards = [_card(actual_time=60), _card(actual_time=0), _card(actual_time=45)]
+        block, _ = calculator.calculate(cards, {}, SIZE_MAP)
+        assert block.actual_consumed_minutes == 105
+
+    def test_actual_consumed_empty_list(self):
+        block, _ = calculator.calculate([], {}, SIZE_MAP)
+        assert block.actual_consumed_minutes == 0
+
+    def test_consumed_minutes_estimated_unchanged(self):
+        """consumed_minutes sigue usando size_mapping — no se rompe."""
+        cards = [_card(size=CardSize.M, actual_time=999)]
+        block, _ = calculator.calculate(cards, {}, SIZE_MAP)
+        assert block.consumed_minutes == 120  # size_mapping["m"]
+        assert block.actual_consumed_minutes == 999
+
+
 class TestCalculateBlockBasic:
     def test_caso_vacio(self):
         block = calculator._calculate_block([], SIZE_MAP)

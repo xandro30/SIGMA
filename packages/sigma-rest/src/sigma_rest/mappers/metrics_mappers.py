@@ -33,6 +33,7 @@ def _block_to_response(block: MetricsBlock) -> MetricsBlockResponse:
         avg_cycle_time_minutes=block.avg_cycle_time_minutes,
         avg_lead_time_minutes=block.avg_lead_time_minutes,
         consumed_minutes=block.consumed_minutes,
+        actual_consumed_minutes=block.actual_consumed_minutes,
         calibration_entries=[
             _calibration_to_response(e) for e in block.calibration_entries
         ],

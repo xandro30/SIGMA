@@ -124,6 +124,9 @@ class MetricsCalculator:
                 if c.size is not None and c.size.value in size_mapping:
                     consumed += size_mapping[c.size.value]
 
+        # Actual consumed: sum of real timer time
+        actual_consumed = sum(c.actual_time_minutes for c in cards)
+
         # Calibration: estimated vs actual
         calibration: list[CalibrationEntry] = []
         if size_mapping is not None:
@@ -146,5 +149,6 @@ class MetricsCalculator:
             avg_cycle_time_minutes=avg_ct,
             avg_lead_time_minutes=avg_lt,
             consumed_minutes=consumed,
+            actual_consumed_minutes=actual_consumed,
             calibration_entries=calibration,
         )

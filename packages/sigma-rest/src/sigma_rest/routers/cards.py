@@ -33,7 +33,7 @@ from sigma_rest.schemas.card_schemas import (
     PromoteCardRequest, DemoteCardRequest, LabelActionRequest,
     TopicActionRequest, UrlActionRequest, AddChecklistItemRequest,
     AddRelatedCardRequest, AssignAreaRequest, AssignProjectRequest, AssignEpicRequest,
-    AssignSizeRequest, MoveTriageStageRequest, CardResponse,
+    AssignSizeRequest, MoveTriageStageRequest, StartTimerRequest, CardResponse,
 )
 from sigma_rest.mappers.card_mappers import card_to_response
 from sigma_rest.dependencies import get_card_repo, get_space_repo, get_area_repo, get_project_repo, get_epic_repo
@@ -361,12 +361,14 @@ async def assign_size(
 @router.post("/cards/{card_id}/timer/start", response_model=CardResponse)
 async def start_timer(
     card_id: str,
+    body: StartTimerRequest = StartTimerRequest(),
     card_repo=Depends(get_card_repo),
 ):
     use_case = StartTimer(card_repo)
     await use_case.execute(StartTimerCommand(
         card_id=CardId(card_id),
         now=Timestamp.now(),
+        description=body.description,
     ))
     card = await _get_card_or_raise(card_repo, CardId(card_id))
     return card_to_response(card)

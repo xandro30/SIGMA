@@ -82,6 +82,10 @@ class AssignSizeRequest(BaseModel):
     size: Literal["xxs", "xs", "s", "m", "l", "xl", "xxl"] | None
 
 
+class StartTimerRequest(BaseModel):
+    description: str = ""
+
+
 class ChecklistItemResponse(BaseModel):
     text: str
     done: bool

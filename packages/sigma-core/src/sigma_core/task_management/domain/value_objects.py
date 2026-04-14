@@ -4,6 +4,8 @@ import urllib.parse
 import uuid
 from dataclasses import dataclass
 
+from sigma_core.shared_kernel.value_objects import Timestamp
+
 
 # ── Identifier helpers ────────────────────────────────────────────
 
@@ -122,3 +124,15 @@ class ChecklistItem:
 
     def reopen(self) -> ChecklistItem:
         return ChecklistItem(text=self.text, done=False)
+
+
+# ── Work log ──────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class WorkLogEntry:
+    """Registro de un bloque de trabajo realizado en una card."""
+
+    log: str
+    minutes: int
+    logged_at: Timestamp

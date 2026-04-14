@@ -22,6 +22,7 @@ from sigma_core.task_management.domain.value_objects import (
     EpicId,
     Url,
     ChecklistItem,
+    WorkLogEntry,
 )
 from sigma_core.task_management.domain.aggregates.space import FINISH_STATE_ID
 
@@ -45,8 +46,10 @@ class Card:
     checklist: list[ChecklistItem] = field(default_factory=list)
     related_cards: list[CardId] = field(default_factory=list)
     size: CardSize | None = None
+    work_log: list[WorkLogEntry] = field(default_factory=list)
     actual_time: Minutes = field(default_factory=lambda: Minutes(0))
     timer_started_at: Timestamp | None = None
+    timer_description: str | None = None
     completed_at: Timestamp | None = None
     entered_workflow_at: Timestamp | None = None
     created_at: Timestamp = field(default_factory=Timestamp.now)
@@ -145,12 +148,18 @@ class Card:
         self.size = size
         self.updated_at = Timestamp.now()
 
-    def start_timer(self, now: Timestamp) -> None:
+    def add_work_log(self, entry: WorkLogEntry) -> None:
+        self.work_log.append(entry)
+        self.actual_time = self.actual_time + Minutes(entry.minutes)
+        self.updated_at = Timestamp.now()
+
+    def start_timer(self, now: Timestamp, description: str = "") -> None:
         if self.timer_started_at is not None:
             raise TimerAlreadyRunningError(
                 f"Card {self.id.value} ya tiene un timer corriendo"
             )
         self.timer_started_at = now
+        self.timer_description = description
         self.updated_at = Timestamp.now()
 
     def stop_timer(self, now: Timestamp) -> None:
@@ -165,6 +174,7 @@ class Card:
             )
         delta_seconds = (now.value - self.timer_started_at.value).total_seconds()
         delta_minutes = int(delta_seconds // 60)
-        self.actual_time = self.actual_time + Minutes(delta_minutes)
+        description = self.timer_description or ""
         self.timer_started_at = None
-        self.updated_at = Timestamp.now()
+        self.timer_description = None
+        self.add_work_log(WorkLogEntry(log=description, minutes=delta_minutes, logged_at=now))

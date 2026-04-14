@@ -31,6 +31,7 @@ from sigma_core.task_management.domain.value_objects import (
     SpaceName,
     Url,
     ChecklistItem,
+    WorkLogEntry,
 )
 
 
@@ -151,7 +152,12 @@ def card_to_dict(card: Card) -> dict[str, Any]:
         "due_date": _to_date_str(card.due_date),
         "size": card.size.value if card.size else None,
         "actual_time": card.actual_time.value,
+        "work_log": [
+            {"log": e.log, "minutes": e.minutes, "logged_at": _to_timestamp(e.logged_at)}
+            for e in card.work_log
+        ],
         "timer_started_at": _to_timestamp(card.timer_started_at) if card.timer_started_at else None,
+        "timer_description": card.timer_description,
         "completed_at": _to_timestamp(card.completed_at) if card.completed_at else None,
         "entered_workflow_at": _to_timestamp(card.entered_workflow_at) if card.entered_workflow_at else None,
         "created_at": _to_timestamp(card.created_at),
@@ -180,9 +186,18 @@ def card_from_dict(data: dict[str, Any]) -> Card:
         ],
         related_cards=[CardId(c) for c in data.get("related_cards", [])],
         due_date=_from_date_str(data.get("due_date")),
-        size=CardSize(data["size"]) if data["size"] else None,
+        size=CardSize(data["size"]) if data.get("size") else None,
         actual_time=Minutes(data["actual_time"]),
-        timer_started_at=_from_timestamp(data["timer_started_at"]) if data["timer_started_at"] else None,
+        work_log=[
+            WorkLogEntry(
+                log=e["log"],
+                minutes=e["minutes"],
+                logged_at=_from_timestamp(e["logged_at"]),
+            )
+            for e in data.get("work_log", [])
+        ],
+        timer_started_at=_from_timestamp(data["timer_started_at"]) if data.get("timer_started_at") else None,
+        timer_description=data.get("timer_description"),
         completed_at=_from_timestamp(data["completed_at"]) if data["completed_at"] else None,
         entered_workflow_at=_from_timestamp(data["entered_workflow_at"]) if data["entered_workflow_at"] else None,
         created_at=_from_timestamp(data["created_at"]),
