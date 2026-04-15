@@ -8,7 +8,7 @@ import {
   verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { color, font, layout, elevation, motion, radius, getAreaHex, priority as pt } from '../../../shared/tokens';
+import { color, font, layout, elevation, motion, radius, getAreaHex } from '../../../shared/tokens';
 import { tracking as tk } from '../../../entities/tracking/trackingTokens';
 import PriorityBadge from '../../../shared/components/PriorityBadge';
 import EditCardModal from '../../../shared/components/modals/EditCardModal';
@@ -66,23 +66,16 @@ function StopButton({ onClick }) {
 // ─── KanbanCard ───────────────────────────────────────────────────────────────
 
 function KanbanCard({
-  card, area, onClick, isDragOverlay = false,
+  card, area, epic, project, onClick, isDragOverlay = false,
   session, secondsLeft, completedBanner,
   onStartWork, onStop, onResume, onDismissBanner,
 }) {
-  const [hov,     setHov]     = useState(false);
-  const [focused, setFocused] = useState(false);
+  const [hov, setHov] = useState(false);
   const hex = getAreaHex(area?.color_id);
-  const pr  = pt[card.priority] ?? pt.low;
 
   const isWorking = session?.state === 'working';
   const isBreak   = session?.state === 'break';
   const hasSession = isWorking || isBreak;
-
-  // Border left: session state overrides priority color
-  const borderLeft = isWorking ? `3px solid ${color.yellow}`
-                   : isBreak   ? `3px solid ${color.blue}`
-                   :             `3px solid ${pr.color}`;
 
   return (
     <div
@@ -90,63 +83,99 @@ function KanbanCard({
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick?.(card)}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
       style={{
-        borderRadius:  radius.md,
-        background:    hov ? color.s3 : color.s2,
-        border:        `1px solid ${hov ? 'rgba(255,255,255,0.12)' : color.border}`,
-        borderLeft,
-        cursor:        isDragOverlay ? 'grabbing' : 'grab',
-        boxShadow:     isDragOverlay ? elevation[3] : hov ? elevation[2] : elevation[1],
-        transform:     hov && !isDragOverlay ? 'translateY(-1px)' : 'none',
-        transition:    `background ${motion.fast}, border ${motion.fast}, box-shadow ${motion.fast}, transform ${motion.fast}`,
-        opacity:       isDragOverlay ? 1 : 0,
-        animation:     isDragOverlay ? 'none' : `slideInUp 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
-        outline:       focused ? `2px solid ${color.yellow}` : 'none',
-        outlineOffset: focused ? '2px' : '0',
-        userSelect:    'none',
-        overflow:      'hidden',
+        borderRadius: radius.md,
+        background:   hov ? color.s3 : color.s2,
+        border:       `1px solid ${hov ? 'rgba(255,255,255,0.12)' : color.border}`,
+        cursor:       isDragOverlay ? 'grabbing' : 'grab',
+        boxShadow:    isDragOverlay ? elevation[3] : hov ? elevation[2] : elevation[1],
+        transform:    hov && !isDragOverlay ? 'translateY(-1px)' : 'none',
+        transition:   `background ${motion.fast}, border-color ${motion.fast}, box-shadow ${motion.fast}, transform ${motion.fast}`,
+        opacity:      isDragOverlay ? 1 : 0,
+        animation:    isDragOverlay ? 'none' : `slideInUp 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+        userSelect:   'none',
+        overflow:     'hidden',
       }}
     >
-      {/* Card body — drag zone */}
-      <div style={{ padding: '12px 14px 10px' }}>
-        {/* Completed banner */}
-        {completedBanner && (
-          <SessionCompletedBanner
-            minutesLogged={completedBanner.minutes}
-            onDismiss={onDismissBanner}
-          />
-        )}
+      {/* Completed banner */}
+      {completedBanner && (
+        <SessionCompletedBanner
+          minutesLogged={completedBanner.minutes}
+          onDismiss={onDismissBanner}
+        />
+      )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '6px', alignItems: 'flex-start' }}>
-          <p style={{ margin: 0, fontSize: '13px', color: color.text, fontWeight: 700, fontFamily: font.sans, flex: 1, lineHeight: '1.4' }}>
-            {card.title}
-          </p>
+      {/* Area strip — tinted with area color, holds area label + priority badge */}
+      {area && (
+        <div style={{
+          background:     `${hex}12`,
+          borderBottom:   `1px solid ${hex}24`,
+          padding:        '5px 14px',
+          display:        'flex',
+          justifyContent: 'space-between',
+          alignItems:     'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div aria-hidden="true" style={{ width: '5px', height: '5px', borderRadius: '50%', background: hex, flexShrink: 0, boxShadow: `0 0 4px ${hex}50` }} />
+            <span style={{ fontSize: '9px', color: hex, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: font.sans }}>
+              {area.name}
+            </span>
+          </div>
           <PriorityBadge value={card.priority} />
         </div>
+      )}
 
+      {/* Card body — drag zone */}
+      <div style={{ padding: area ? '10px 14px 10px' : '12px 14px 10px' }}>
+        {/* Title — priority badge inline only when there is no area strip */}
+        {area ? (
+          <p style={{ margin: '0 0 6px', fontSize: '13px', color: color.text, fontWeight: 700, fontFamily: font.sans, lineHeight: '1.35' }}>
+            {card.title}
+          </p>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: color.text, fontWeight: 700, fontFamily: font.sans, flex: 1, lineHeight: '1.35' }}>
+              {card.title}
+            </p>
+            <PriorityBadge value={card.priority} size="xs" />
+          </div>
+        )}
+
+        {/* Description — 3-line clamp */}
         {card.description && (
-          <p style={{ margin: '0 0 8px', fontSize: '11px', color: color.muted, fontFamily: font.sans, fontWeight: 400, lineHeight: '1.5',
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <p style={{ margin: '0 0 8px', fontSize: '11px', color: color.muted, fontFamily: font.sans, lineHeight: '1.55',
+            display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {card.description}
           </p>
         )}
 
-        {card.labels?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-            {card.labels.slice(0, 3).map(l => (
-              <span key={l} style={{ fontSize: '10px', color: color.muted, background: 'rgba(255,255,255,0.06)', border: `1px solid ${color.border2}`, borderRadius: radius.sm, padding: '2px 7px', fontFamily: font.mono, fontWeight: 500 }}>
-                #{l}
+        {/* Project › Epic breadcrumb */}
+        {(project || epic) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px', overflow: 'hidden', minWidth: 0 }}>
+            {project && (
+              <span style={{ fontSize: '10px', color: color.muted, fontFamily: font.mono, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '1 1 0', minWidth: 0 }}>
+                {project.name}
               </span>
-            ))}
+            )}
+            {project && epic && (
+              <span aria-hidden="true" style={{ color: color.muted2, fontSize: '10px', flexShrink: 0, userSelect: 'none' }}>›</span>
+            )}
+            {epic && (
+              <span style={{ fontSize: '10px', color: color.muted2, fontFamily: font.mono, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '1 1 0', minWidth: 0 }}>
+                {epic.name}
+              </span>
+            )}
           </div>
         )}
 
-        {area && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <div aria-hidden="true" style={{ width: '6px', height: '6px', borderRadius: '50%', background: hex, flexShrink: 0, boxShadow: `0 0 6px ${hex}80` }} />
-            <span style={{ fontSize: '11px', color: color.muted, fontFamily: font.sans, fontWeight: 600 }}>{area.name}</span>
+        {/* Tags — all labels, wrap naturally */}
+        {card.labels?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {card.labels.map(l => (
+              <span key={l} style={{ fontSize: '9px', color: color.muted, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: radius.xs, padding: '2px 6px', fontFamily: font.mono }}>
+                #{l}
+              </span>
+            ))}
           </div>
         )}
       </div>
@@ -240,24 +269,34 @@ function KanbanCard({
 
 // ─── SortableKanbanCard ───────────────────────────────────────────────────────
 
-function SortableKanbanCard({ card, area, onClick, session, secondsLeft, completedBanner, onStartWork, onStop, onResume, onDismissBanner }) {
+function SortableKanbanCard({ card, area, epic, project, onClick, session, secondsLeft, completedBanner, onStartWork, onStop, onResume, onDismissBanner }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
+  const [focused, setFocused] = useState(false);
 
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      role="article"
+      aria-label={card.title}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       style={{
-        transform:   CSS.Transform.toString(transform),
+        transform:     CSS.Transform.toString(transform),
         transition,
-        opacity:     isDragging ? 0 : 1,
-        touchAction: 'none',
+        opacity:       isDragging ? 0 : 1,
+        touchAction:   'none',
+        outline:       focused ? `2px solid ${color.yellow}` : 'none',
+        outlineOffset: focused ? '2px' : '0',
+        borderRadius:  radius.md,
       }}
     >
       <KanbanCard
         card={card}
         area={area}
+        epic={epic}
+        project={project}
         onClick={onClick}
         session={session}
         secondsLeft={secondsLeft}
@@ -273,7 +312,7 @@ function SortableKanbanCard({ card, area, onClick, session, secondsLeft, complet
 
 // ─── Column ───────────────────────────────────────────────────────────────────
 
-function Column({ id, name, cards, areas, onCardClick, animIndex, activeSession, secondsLeft, completedBanner, onStartWork, onStop, onResume, onDismissBanner }) {
+function Column({ id, name, cards, areas, epicById = {}, projectById = {}, onCardClick, animIndex, activeSession, secondsLeft, completedBanner, onStartWork, onStop, onResume, onDismissBanner }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -283,8 +322,10 @@ function Column({ id, name, cards, areas, onCardClick, animIndex, activeSession,
         minWidth:      layout.columnWidth,
         maxWidth:      layout.columnWidth,
         background:    isOver ? `rgba(255,193,7,0.04)` : color.s1,
-        border:        `1px solid ${isOver ? `${color.yellow}55` : color.border}`,
         borderTop:     `3px solid ${color.yellow}`,
+        borderRight:   `1px solid ${isOver ? `${color.yellow}55` : color.border}`,
+        borderBottom:  `1px solid ${isOver ? `${color.yellow}55` : color.border}`,
+        borderLeft:    `1px solid ${isOver ? `${color.yellow}55` : color.border}`,
         borderRadius:  radius.lg,
         display:       'flex',
         flexDirection: 'column',
@@ -292,7 +333,7 @@ function Column({ id, name, cards, areas, onCardClick, animIndex, activeSession,
         boxShadow:     isOver ? `0 0 0 2px ${color.yellow}25` : elevation[1],
         opacity:       0,
         animation:     `slideInUp 320ms cubic-bezier(0.16, 1, 0.3, 1) ${animIndex * 50}ms forwards`,
-        transition:    `border-color 150ms, background 150ms, box-shadow 150ms`,
+        transition:    `border-right-color 150ms, border-bottom-color 150ms, border-left-color 150ms, background 150ms, box-shadow 150ms`,
       }}
     >
       {/* Header */}
@@ -321,6 +362,11 @@ function Column({ id, name, cards, areas, onCardClick, animIndex, activeSession,
                   key={c.id}
                   card={c}
                   area={areas?.find(a => a.id === c.area_id)}
+                  epic={c.epic_id ? epicById[c.epic_id] ?? null : null}
+                  project={c.project_id
+                    ? projectById[c.project_id] ?? null
+                    : (c.epic_id && epicById[c.epic_id]?.project_id
+                        ? projectById[epicById[c.epic_id].project_id] ?? null : null)}
                   onClick={onCardClick}
                   session={cardSession}
                   secondsLeft={cardSession ? secondsLeft : null}
@@ -341,7 +387,7 @@ function Column({ id, name, cards, areas, onCardClick, animIndex, activeSession,
 
 // ─── Board ────────────────────────────────────────────────────────────────────
 
-export default function KanbanBoard({ space, cards, areas }) {
+export default function KanbanBoard({ space, cards, areas, epicById = {}, projectById = {} }) {
   const activeSpaceId    = useUIStore(s => s.activeSpaceId);
   const activeAreaFilter = useUIStore(s => s.activeAreaFilter);
 
@@ -381,8 +427,12 @@ export default function KanbanBoard({ space, cards, areas }) {
   }, [activeSession?.id, activeSession?.state]);
 
   // Fix: guard setState on unmounted component
-  const isMountedRef = useRef(true);
-  useEffect(() => () => { isMountedRef.current = false; }, []);
+  const isMountedRef      = useRef(true);
+  const dragErrorTimerRef = useRef(null);
+  useEffect(() => () => {
+    isMountedRef.current = false;
+    if (dragErrorTimerRef.current) clearTimeout(dragErrorTimerRef.current);
+  }, []);
 
   // Recovery from page reload: if session already expired, call the right transition
   // Fix: reset per space so switching spaces doesn't skip recovery
@@ -528,7 +578,8 @@ export default function KanbanBoard({ space, cards, areas }) {
           setColumnOrder(snapshot);
           const msg = err?.response?.data?.detail ?? 'Movimiento no permitido por el workflow';
           setDragError(msg);
-          setTimeout(() => setDragError(null), 4000);
+          if (dragErrorTimerRef.current) clearTimeout(dragErrorTimerRef.current);
+          dragErrorTimerRef.current = setTimeout(() => setDragError(null), 4000);
         },
       });
     }
@@ -558,6 +609,8 @@ export default function KanbanBoard({ space, cards, areas }) {
               name={c.name}
               cards={getColCards(c.id)}
               areas={areas}
+              epicById={epicById}
+              projectById={projectById}
               onCardClick={setEditCard}
               animIndex={i}
               activeSession={activeSession}
@@ -576,6 +629,11 @@ export default function KanbanBoard({ space, cards, areas }) {
             <KanbanCard
               card={activeDragCard}
               area={areas?.find(a => a.id === activeDragCard.area_id)}
+              epic={activeDragCard.epic_id ? epicById[activeDragCard.epic_id] ?? null : null}
+              project={activeDragCard.project_id
+                ? projectById[activeDragCard.project_id] ?? null
+                : (activeDragCard.epic_id && epicById[activeDragCard.epic_id]?.project_id
+                    ? projectById[epicById[activeDragCard.epic_id].project_id] ?? null : null)}
               isDragOverlay
             />
           ) : null}

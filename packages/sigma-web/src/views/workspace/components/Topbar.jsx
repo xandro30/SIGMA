@@ -175,7 +175,7 @@ export default function Topbar() {
                 boxShadow:    elevation[3],
                 animation:    `slideInUp 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
               }}>
-                <p style={{ margin: '0 0 6px', padding: '2px 8px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                <p style={{ margin: '0 0 6px', padding: '2px 8px', fontSize: '9px', color: color.muted, fontFamily: font.mono, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                   Spaces
                 </p>
                 {spaces.map(s => (

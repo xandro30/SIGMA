@@ -206,7 +206,7 @@ export default function CycleManager({ spaceId, areas, onClose, onChanged }) {
         {/* Closed cycles (collapsed) */}
         {closedCycles.length > 0 && (
           <details style={{ cursor: 'pointer' }}>
-            <summary style={{ fontFamily: font.mono, fontSize: '10px', fontWeight: 700, color: color.muted2, textTransform: 'uppercase', letterSpacing: '0.1em', padding: `${space.xs} 0` }}>
+            <summary style={{ fontFamily: font.mono, fontSize: '10px', fontWeight: 700, color: color.muted, textTransform: 'uppercase', letterSpacing: '0.1em', padding: `${space.xs} 0` }}>
               Cerrados ({closedCycles.length})
             </summary>
             <div style={{ display: 'flex', flexDirection: 'column', gap: space.xs, paddingTop: space.sm }}>
@@ -236,7 +236,7 @@ export default function CycleManager({ spaceId, areas, onClose, onChanged }) {
                     border: cycleType === t.value ? `1px solid ${color.borderAccent}` : '1px solid transparent',
                   }}>
                   <span style={{ fontWeight: 700 }}>{t.label}</span>
-                  <span style={{ fontFamily: font.mono, fontSize: '9px', color: color.muted2 }}>{t.desc}</span>
+                  <span style={{ fontFamily: font.mono, fontSize: '9px', color: color.muted }}>{t.desc}</span>
                 </button>
               ))}
             </div>
@@ -295,7 +295,7 @@ function CycleCard({ cycle, selected, onClick, compact }) {
 
 function Label({ children }) {
   return (
-    <span style={{ display: 'block', fontFamily: font.mono, fontSize: '10px', fontWeight: 700, color: color.muted2, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: space.xs }}>
+    <span style={{ display: 'block', fontFamily: font.mono, fontSize: '10px', fontWeight: 700, color: color.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: space.xs }}>
       {children}
     </span>
   );
@@ -327,7 +327,7 @@ function TypeBadge({ type }) {
   return (
     <span style={{
       padding: `1px ${space.xs}`, background: color.s3, borderRadius: radius.xs,
-      fontFamily: font.mono, fontSize: '9px', fontWeight: 600, color: color.muted2,
+      fontFamily: font.mono, fontSize: '9px', fontWeight: 600, color: color.muted,
       textTransform: 'uppercase',
     }}>
       {labels[type] ?? type}

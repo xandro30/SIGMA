@@ -131,7 +131,7 @@ export default function CardModal({ card, areas, space, spaceId, onClose, onMove
 
           {/* Estado badge */}
           <div style={{ marginBottom: "18px", display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "9px", color: color.muted2, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            <span style={{ fontSize: "9px", color: color.muted, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               Estado
             </span>
             <span style={{
@@ -266,7 +266,7 @@ export default function CardModal({ card, areas, space, spaceId, onClose, onMove
 function Section({ label, children }) {
   return (
     <div style={{ marginBottom: "18px" }}>
-      <p style={{ margin: "0 0 8px", fontSize: "9px", color: color.muted2, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
+      <p style={{ margin: "0 0 8px", fontSize: "9px", color: color.muted, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
         {label}
       </p>
       {children}
@@ -340,7 +340,7 @@ function MoveStateModal({ card, allStates, isFromPreWorkflow, onMove, onClose })
         boxShadow:    elevation[4],
         animation:    `scaleIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
       }}>
-        <p style={{ margin: "0 0 14px", fontSize: "10px", color: color.muted2, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        <p style={{ margin: "0 0 14px", fontSize: "10px", color: color.muted, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase" }}>
           Mover a
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -390,7 +390,7 @@ function DemoteModal({ onDemote, onClose }) {
         boxShadow:    elevation[4],
         animation:    `scaleIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
       }}>
-        <p style={{ margin: "0 0 4px", fontSize: "10px", color: color.muted2, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        <p style={{ margin: "0 0 4px", fontSize: "10px", color: color.muted, fontFamily: font.mono, letterSpacing: "0.1em", textTransform: "uppercase" }}>
           Volver a Pre-workflow
         </p>
         <p style={{ margin: "0 0 14px", fontSize: "11px", color: color.muted, fontFamily: font.sans, fontWeight: 400 }}>

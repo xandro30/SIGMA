@@ -6,7 +6,7 @@ export default function Tag({ label, onRemove }) {
       display:"inline-flex", alignItems:"center", gap:"4px", cursor:onRemove?"pointer":"default" }}
       onClick={onRemove}>
       #{label}
-      {onRemove && <span style={{ color:color.muted2, fontSize:"9px" }}>✕</span>}
+      {onRemove && <span style={{ color:color.muted, fontSize:"9px" }}>✕</span>}
     </span>
   );
 }

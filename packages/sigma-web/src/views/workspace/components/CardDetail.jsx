@@ -12,7 +12,7 @@ export default function CardDetail({ card, areas, space, onClose, onMove, onArch
           {area && <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:hex }} />}
           <span style={{ fontSize:"10px", fontWeight:700, color:color.muted, fontFamily:font.mono, letterSpacing:"0.08em" }}>{area?.name??"Sin área"}</span>
         </div>
-        <button onClick={onClose} style={{ background:"none", border:"none", color:color.muted2, cursor:"pointer", fontSize:"16px", lineHeight:1 }}>✕</button>
+        <button onClick={onClose} style={{ background:"none", border:"none", color:color.muted, cursor:"pointer", fontSize:"16px", lineHeight:1 }}>✕</button>
       </div>
       <div style={{ padding:"14px", overflowY:"auto", flex:1 }}>
         <div style={{ marginBottom:"14px" }}>
@@ -21,12 +21,12 @@ export default function CardDetail({ card, areas, space, onClose, onMove, onArch
         </div>
         {card.description && <p style={{ fontSize:"11px", color:color.muted, fontFamily:font.sans, lineHeight:"1.6", marginBottom:"14px" }}>{card.description}</p>}
         <div style={{ marginBottom:"14px" }}>
-          <p style={{ fontSize:"9px", color:color.muted2, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>ESTADO</p>
+          <p style={{ fontSize:"9px", color:color.muted, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>ESTADO</p>
           <span style={{ fontSize:"10px", color:color.yellow, fontFamily:font.mono, background:`${color.yellow}15`, border:`1px solid ${color.yellow}30`, padding:"3px 8px", borderRadius:"5px" }}>{curName}</span>
         </div>
         {card.workflow_state_id && (
           <div style={{ marginBottom:"14px" }}>
-            <p style={{ fontSize:"9px", color:color.muted2, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>MOVER A</p>
+            <p style={{ fontSize:"9px", color:color.muted, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>MOVER A</p>
             <div style={{ display:"flex", flexDirection:"column", gap:"4px" }}>
               {allStates.filter((s)=>s.id!==card.workflow_state_id).map((s) => (
                 <button key={s.id} onClick={() => onMove(card.id,s.id)} style={{ background:"transparent", border:`1px solid ${color.border2}`, color:color.muted, borderRadius:"6px", padding:"6px 10px", cursor:"pointer", fontSize:"10px", fontFamily:font.mono, textAlign:"left" }}>→ {s.name}</button>
@@ -36,7 +36,7 @@ export default function CardDetail({ card, areas, space, onClose, onMove, onArch
         )}
         {card.labels?.length>0 && (
           <div style={{ marginBottom:"14px" }}>
-            <p style={{ fontSize:"9px", color:color.muted2, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>LABELS</p>
+            <p style={{ fontSize:"9px", color:color.muted, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>LABELS</p>
             <div style={{ display:"flex", flexWrap:"wrap", gap:"4px" }}>
               {card.labels.map((l) => <span key={l} style={{ fontSize:"9px", color:color.muted, background:color.s2, border:`1px solid ${color.border}`, borderRadius:"3px", padding:"2px 6px", fontFamily:font.mono }}>#{l}</span>)}
             </div>
@@ -44,7 +44,7 @@ export default function CardDetail({ card, areas, space, onClose, onMove, onArch
         )}
         {card.checklist?.length>0 && (
           <div style={{ marginBottom:"14px" }}>
-            <p style={{ fontSize:"9px", color:color.muted2, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>CHECKLIST ({card.checklist.filter((i)=>i.done).length}/{card.checklist.length})</p>
+            <p style={{ fontSize:"9px", color:color.muted, fontFamily:font.mono, letterSpacing:"0.1em", marginBottom:"6px" }}>CHECKLIST ({card.checklist.filter((i)=>i.done).length}/{card.checklist.length})</p>
             <div style={{ display:"flex", flexDirection:"column", gap:"4px" }}>
               {card.checklist.map((item,i) => (
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:"7px" }}>
@@ -56,7 +56,7 @@ export default function CardDetail({ card, areas, space, onClose, onMove, onArch
           </div>
         )}
         {card.workflow_state_id && (
-          <button onClick={() => onArchive(card.id)} style={{ width:"100%", background:"transparent", border:`1px solid ${color.border2}`, color:color.muted2, borderRadius:"7px", padding:"8px", cursor:"pointer", fontSize:"10px", fontFamily:font.mono, marginTop:"8px" }}>📦 Archivar</button>
+          <button onClick={() => onArchive(card.id)} style={{ width:"100%", background:"transparent", border:`1px solid ${color.border2}`, color:color.muted, borderRadius:"7px", padding:"8px", cursor:"pointer", fontSize:"10px", fontFamily:font.mono, marginTop:"8px" }}>📦 Archivar</button>
         )}
       </div>
     </div>

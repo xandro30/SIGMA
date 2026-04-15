@@ -18,6 +18,7 @@ class CreateCardCommand:
     space_id: SpaceId
     title: CardTitle
     initial_stage: PreWorkflowStage | WorkflowStateId = PreWorkflowStage.INBOX
+    description: str | None = None
     area_id: AreaId | None = None
     project_id: ProjectId | None = None
     epic_id: EpicId | None = None
@@ -42,6 +43,7 @@ class CreateCard:
                 title=cmd.title,
                 pre_workflow_stage=None,
                 workflow_state_id=cmd.initial_stage,
+                description=cmd.description,
                 area_id=cmd.area_id,
                 project_id=cmd.project_id,
                 epic_id=cmd.epic_id,
@@ -55,6 +57,7 @@ class CreateCard:
                 title=cmd.title,
                 pre_workflow_stage=cmd.initial_stage,
                 workflow_state_id=None,
+                description=cmd.description,
                 area_id=cmd.area_id,
                 project_id=cmd.project_id,
                 epic_id=cmd.epic_id,

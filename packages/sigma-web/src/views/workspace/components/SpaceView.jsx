@@ -1,7 +1,11 @@
+import { useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { color, font } from "../../../shared/tokens";
 import { useUIStore } from "../../../shared/store/useUIStore";
 import { useCards, useMoveCard, usePromoteCard, useArchiveCard } from "../../../entities/card/hooks/useCards";
 import { useAreas } from "../../../entities/area/hooks/useAreas";
+import { useEpicsBySpace } from "../../../entities/epic/hooks/useEpics";
+import { projectsApi } from "../../../api/projects";
 import KanbanBoard from "./KanbanBoard";
 import PreWorkflowPanel from "./PreWorkflowPanel";
 import CardDetail from "./CardDetail";
@@ -14,6 +18,28 @@ export default function SpaceView({ space }) {
   const toggleFilter    = useUIStore((s) => s.toggleAreaFilter);
   const { data:cards=[], isLoading:cardsLoading } = useCards(space?.id);
   const { data:areas=[],  isLoading:areasLoading  } = useAreas();
+  const { data:epics=[] }                           = useEpicsBySpace(space?.id);
+
+  // Build epicById lookup (one query for the whole space)
+  const epicById = useMemo(() => Object.fromEntries(epics.map(e => [e.id, e])), [epics]);
+
+  // Fetch each referenced project by ID — avoids the area indirection
+  const projectIds = useMemo(
+    () => [...new Set(epics.map(e => e.project_id).filter(Boolean))],
+    [epics]
+  );
+  const projectResults = useQueries({
+    queries: projectIds.map(id => ({
+      queryKey: ['project', id],
+      queryFn:  () => projectsApi.getById(id),
+    })),
+  });
+  const projectById = useMemo(() => {
+    const map = {};
+    projectResults.forEach(r => { if (r.data?.id) map[r.data.id] = r.data; });
+    return map;
+  }, [projectResults]);
+
   const { mutate:moveCard    } = useMoveCard(space?.id);
   const { mutate:promoteCard } = usePromoteCard(space?.id);
   const { mutate:archiveCard } = useArchiveCard(space?.id);
@@ -36,7 +62,7 @@ export default function SpaceView({ space }) {
         <div style={{ height:"40px", padding:"0 16px", borderBottom:`1px solid ${color.border}`, background:"#060606", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
             <span style={{ fontSize:"10px", fontWeight:700, color:color.muted, fontFamily:font.mono, letterSpacing:"0.08em" }}>{space?.name?.toUpperCase()??"BOARD"}</span>
-            <span style={{ fontSize:"9px", color:color.muted2, fontFamily:font.mono }}>{workflowCards.length} en workflow · {preCards.length} en cola</span>
+            <span style={{ fontSize:"9px", color:color.muted, fontFamily:font.mono }}>{workflowCards.length} en workflow · {preCards.length} en cola</span>
           </div>
           <div style={{ display:"flex", gap:"4px" }}>
             <button onClick={()=>toggleFilter("all")} style={{ background:activeFilter==="all"?`${color.yellow}18`:"transparent", border:`1px solid ${activeFilter==="all"?color.yellow:color.border}`, color:activeFilter==="all"?color.yellow:color.muted, borderRadius:"5px", padding:"2px 8px", cursor:"pointer", fontSize:"9px", fontWeight:800, fontFamily:font.mono }}>ALL</button>
@@ -52,7 +78,7 @@ export default function SpaceView({ space }) {
             <p style={{ fontSize:"11px", color:color.muted2, fontFamily:font.sans, textAlign:"center", maxWidth:"260px", lineHeight:"1.6" }}>Crea una card y promuévela al workflow para verla aquí</p>
           </div>
         ) : (
-          <KanbanBoard space={space} cards={cards} areas={areas} onCardClick={handleCardClick} />
+          <KanbanBoard space={space} cards={cards} areas={areas} epicById={epicById} projectById={projectById} onCardClick={handleCardClick} />
         )}
       </div>
       {selectedCard && <CardDetail card={selectedCard} areas={areas} space={space} onClose={clearSelected} onMove={handleMove} onArchive={handleArchive} />}

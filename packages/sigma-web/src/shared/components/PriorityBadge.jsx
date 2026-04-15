@@ -1,8 +1,8 @@
 import { priority, font } from '../tokens';
 export default function PriorityBadge({ value, size = 'sm' }) {
   const p   = priority[value] ?? priority.low;
-  const pad = size === 'md' ? '4px 11px' : '3px 8px';
-  const fs  = size === 'md' ? '11px' : '10px';
+  const pad = size === 'md' ? '4px 11px' : size === 'xs' ? '2px 6px' : '3px 8px';
+  const fs  = size === 'md' ? '11px' : size === 'xs' ? '9px' : '10px';
   return (
     <span style={{
       fontSize: fs, fontWeight: 700,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { color, font, priority as pt, getAreaHex } from '../../tokens';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useUIStore } from '../../store/useUIStore';
@@ -40,6 +40,9 @@ export default function CreateCardModal() {
   const [stage,       setStage]       = useState('inbox');
   const [areaId,      setAreaId]      = useState('');
   const [epicId,      setEpicId]      = useState('');
+  const [labels,      setLabels]      = useState([]);
+  const [labelInput,  setLabelInput]  = useState('');
+  const labelInputRef = useRef(null);
 
   const { data: epics    = [] } = useEpicsByArea(areaId);
   const { data: projects = [] } = useProjects(areaId);
@@ -55,6 +58,29 @@ export default function CreateCardModal() {
     setEpicId('');
   };
 
+  const addLabel = (raw) => {
+    const tag = raw.trim().replace(/^#+/, '').trim();
+    if (tag && !labels.includes(tag)) setLabels(prev => [...prev, tag]);
+    setLabelInput('');
+  };
+
+  const handleLabelKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addLabel(labelInput);
+    } else if (e.key === 'Backspace' && labelInput === '' && labels.length > 0) {
+      setLabels(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleLabelPaste = (e) => {
+    const text = e.clipboardData.getData('text');
+    if (text.includes(',')) {
+      e.preventDefault();
+      text.split(',').forEach(t => addLabel(t));
+    }
+  };
+
   const canCreate = title.trim().length > 0 && !!activeSpaceId;
 
   const handleCreate = () => {
@@ -68,6 +94,7 @@ export default function CreateCardModal() {
         area_id:       areaId || null,
         epic_id:       epicId || null,
         project_id:    selectedEpic?.project_id ?? null,
+        labels,
       },
       { onSuccess: close }
     );
@@ -116,7 +143,7 @@ export default function CreateCardModal() {
 
           {/* Título */}
           <div>
-            <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>TÍTULO *</p>
+            <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>TÍTULO *</p>
             <input
               autoFocus
               value={title}
@@ -129,7 +156,7 @@ export default function CreateCardModal() {
 
           {/* Descripción */}
           <div>
-            <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>DESCRIPCIÓN</p>
+            <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>DESCRIPCIÓN</p>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
@@ -141,7 +168,7 @@ export default function CreateCardModal() {
 
           {/* Prioridad */}
           <div>
-            <p style={{ margin: '0 0 8px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>PRIORIDAD</p>
+            <p style={{ margin: '0 0 8px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>PRIORIDAD</p>
             <div style={{ display: 'flex', gap: '6px' }}>
               {Object.entries(pt).map(([k, p]) => (
                 <button key={k} onClick={() => setPriority(k)} style={{
@@ -158,7 +185,7 @@ export default function CreateCardModal() {
 
           {/* Stage destino */}
           <div>
-            <p style={{ margin: '0 0 8px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>DESTINO EN PRE-WORKFLOW</p>
+            <p style={{ margin: '0 0 8px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>DESTINO EN PRE-WORKFLOW</p>
             <div style={{ display: 'flex', gap: '6px' }}>
               {STAGES.map(s => (
                 <button key={s.id} onClick={() => setStage(s.id)} style={{
@@ -177,10 +204,49 @@ export default function CreateCardModal() {
             </div>
           </div>
 
+          {/* Tags */}
+          <div>
+            <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>TAGS</p>
+            <div style={{
+              display:      'flex',
+              flexWrap:     'wrap',
+              gap:          '5px',
+              alignItems:   'center',
+              background:   color.s2,
+              border:       `1.5px solid ${color.border2}`,
+              borderRadius: '8px',
+              padding:      '7px 10px',
+              minHeight:    '40px',
+              cursor:       'text',
+            }}
+              onClick={() => labelInputRef.current?.focus()}
+            >
+              {labels.map(l => (
+                <span key={l} style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px', color: color.muted, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '4px', padding: '2px 7px', fontFamily: font.mono }}>
+                  #{l}
+                  <button
+                    onClick={e => { e.stopPropagation(); setLabels(prev => prev.filter(x => x !== l)); }}
+                    style={{ background: 'none', border: 'none', color: color.muted2, cursor: 'pointer', padding: '0 0 0 2px', fontSize: '11px', lineHeight: 1 }}
+                  >×</button>
+                </span>
+              ))}
+              <input
+                ref={labelInputRef}
+                value={labelInput}
+                onChange={e => setLabelInput(e.target.value)}
+                onKeyDown={handleLabelKeyDown}
+                onPaste={handleLabelPaste}
+                onBlur={() => labelInput.trim() && addLabel(labelInput)}
+                placeholder={labels.length === 0 ? 'Añade tags (Enter o coma)…' : ''}
+                style={{ background: 'none', border: 'none', outline: 'none', color: color.text, fontSize: '12px', fontFamily: font.mono, flex: 1, minWidth: '80px', padding: 0 }}
+              />
+            </div>
+          </div>
+
           {/* Área + Épica */}
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>ÁREA</p>
+              <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>ÁREA</p>
               <select
                 value={areaId}
                 onChange={e => handleAreaChange(e.target.value)}
@@ -197,7 +263,7 @@ export default function CreateCardModal() {
               </select>
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>ÉPICA</p>
+              <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700 }}>ÉPICA</p>
               <select
                 value={epicId}
                 onChange={e => setEpicId(e.target.value)}
@@ -219,7 +285,7 @@ export default function CreateCardModal() {
 
         {/* Footer */}
         <div style={{ padding: '14px 20px', borderTop: `1px solid ${color.border}`, background: `rgba(255,255,255,0.02)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: '10px', color: color.muted2, fontFamily: font.mono }}>
+          <span style={{ fontSize: '10px', color: color.muted, fontFamily: font.mono }}>
             Irá a <strong style={{ color: STAGES.find(s => s.id === stage)?.c }}>{STAGES.find(s => s.id === stage)?.label}</strong>
           </span>
           <div style={{ display: 'flex', gap: '8px' }}>

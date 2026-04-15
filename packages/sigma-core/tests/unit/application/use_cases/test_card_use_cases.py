@@ -859,3 +859,61 @@ async def test_set_size_mapping_space_not_found_raises():
             space_id=SpaceId.generate(),
             mapping=SizeMapping.default(),
         ))
+
+
+# ── AddWorkLogEntry use case ─────────────────────────────────────
+
+from sigma_core.task_management.application.use_cases.card.add_work_log_entry import (
+    AddWorkLogEntry, AddWorkLogEntryCommand,
+)
+from sigma_core.shared_kernel.value_objects import Minutes
+
+
+@pytest.mark.asyncio
+async def test_add_work_log_entry_appends_to_work_log(card_in_backlog):
+    space, card = card_in_backlog
+    card_repo = FakeCardRepository()
+    await card_repo.save(card)
+    use_case = AddWorkLogEntry(card_repo)
+
+    await use_case.execute(AddWorkLogEntryCommand(
+        card_id=card.id,
+        description="Implementé el endpoint de login",
+        minutes=45,
+    ))
+
+    updated = await card_repo.get_by_id(card.id)
+    assert len(updated.work_log) == 1
+    assert updated.work_log[0].log == "Implementé el endpoint de login"
+    assert updated.work_log[0].minutes == 45
+
+
+@pytest.mark.asyncio
+async def test_add_work_log_entry_increments_actual_time(card_in_backlog):
+    space, card = card_in_backlog
+    card_repo = FakeCardRepository()
+    await card_repo.save(card)
+    use_case = AddWorkLogEntry(card_repo)
+
+    await use_case.execute(AddWorkLogEntryCommand(
+        card_id=card.id, description="Primera entrada", minutes=30,
+    ))
+    await use_case.execute(AddWorkLogEntryCommand(
+        card_id=card.id, description="Segunda entrada", minutes=20,
+    ))
+
+    updated = await card_repo.get_by_id(card.id)
+    assert updated.actual_time == Minutes(50)
+
+
+@pytest.mark.asyncio
+async def test_add_work_log_entry_card_not_found_raises():
+    card_repo = FakeCardRepository()
+    use_case = AddWorkLogEntry(card_repo)
+
+    with pytest.raises(CardNotFoundError):
+        await use_case.execute(AddWorkLogEntryCommand(
+            card_id=CardId.generate(),
+            description="Trabajo",
+            minutes=25,
+        ))

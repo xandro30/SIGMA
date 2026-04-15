@@ -66,7 +66,7 @@ export default function SpaceSettings() {
                   <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: color.s2, border: `1px solid ${color.border}`, borderRadius: '8px' }}>
                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: s.c }} />
                     <span style={{ flex: 1, fontSize: '12px', color: s.fixed ? s.c : color.text, fontFamily: s.fixed ? font.mono : font.sans, fontWeight: s.fixed ? 700 : 500 }}>{s.name}</span>
-                    {s.fixed && <span style={{ fontSize: '9px', color: color.muted2, fontFamily: font.mono }}>FIJO</span>}
+                    {s.fixed && <span style={{ fontSize: '9px', color: color.muted, fontFamily: font.mono }}>FIJO</span>}
                     {!s.fixed && <button onClick={() => removeState(s.id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '12px' }}>✕</button>}
                   </div>
                 ))}

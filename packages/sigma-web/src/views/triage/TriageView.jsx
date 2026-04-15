@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, useSensor, useSensors, useDroppable,
@@ -8,11 +9,13 @@ import {
   verticalListSortingStrategy, arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { color, font, getAreaHex, priority as pt } from '../../shared/tokens';
+import { color, font, radius, getAreaHex } from '../../shared/tokens';
 import { useUIStore } from '../../shared/store/useUIStore';
 import { useCards, usePromoteCard, useMoveTriageStage } from '../../entities/card/hooks/useCards';
 import { useAreas } from '../../entities/area/hooks/useAreas';
 import { useSpaces } from '../../entities/space/hooks/useSpaces';
+import { useEpicsBySpace } from '../../entities/epic/hooks/useEpics';
+import { projectsApi } from '../../api/projects';
 import PriorityBadge from '../../shared/components/PriorityBadge';
 import EditCardModal from '../../shared/components/modals/EditCardModal';
 
@@ -22,110 +25,193 @@ const STAGES = [
   { id: 'backlog',    label: 'BACKLOG',    accent: '#8B5CF6', desc: 'Listo para planificar'     },
 ];
 
-// ─── Pure display card ────────────────────────────────────────────────────────
+// ─── TriageCard ───────────────────────────────────────────────────────────────
 
-function TriageCard({ card, areas, isSelected, onSelect, onEdit, onPromote, isDragOverlay = false }) {
-  const area  = areas.find(a => a.id === card.area_id);
-  const hex   = getAreaHex(area?.color_id);
-  const pr    = pt[card.priority] ?? pt.low;
+function TriageCard({ card, areas, epic, project, onClick, onPromote, isDragOverlay = false }) {
+  const [hov, setHov] = useState(false);
+  const area = areas.find(a => a.id === card.area_id);
+  const hex  = getAreaHex(area?.color_id);
 
   return (
     <div
+      onClick={!isDragOverlay && onClick ? () => onClick(card) : undefined}
+      onMouseEnter={() => !isDragOverlay && setHov(true)}
+      onMouseLeave={() => setHov(false)}
       style={{
-        padding:      '12px',
-        borderRadius: '9px',
-        cursor:       isDragOverlay ? 'grabbing' : 'grab',
-        background:   isSelected ? color.s3 : color.s2,
-        borderTop:    `1px solid ${isSelected ? color.yellow : color.border}`,
-        borderRight:  `1px solid ${isSelected ? color.yellow : color.border}`,
-        borderBottom: `1px solid ${isSelected ? color.yellow : color.border}`,
-        borderLeft:   `4px solid ${pr.color}`,
-        // Entrance animation — constant delay prevents re-trigger on reorder
-        opacity:      isDragOverlay ? 1 : 0,
-        animation:    isDragOverlay ? 'none' : `slideInUp 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
-        transition:   'background 0.12s, border-color 0.12s',
-        userSelect:   'none',
-        boxShadow:    isDragOverlay ? '0 8px 30px #00000060' : 'none',
+        borderRadius:  radius.md,
+        background:    hov ? color.s3 : color.s2,
+        border:        `1px solid ${hov ? 'rgba(255,255,255,0.12)' : color.border}`,
+        cursor:        isDragOverlay ? 'grabbing' : 'grab',
+        transition:    `background 0.12s, border-color 0.12s, box-shadow 0.12s`,
+        opacity:       isDragOverlay ? 1 : 0,
+        animation:     isDragOverlay ? 'none' : `slideInUp 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
+        userSelect:    'none',
+        overflow:      'hidden',
       }}
     >
-      {/* Card body — click to select */}
-      <div onClick={isDragOverlay ? undefined : () => onSelect(card)}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '8px', alignItems: 'flex-start' }}>
-          <p style={{ margin: 0, fontSize: '13px', color: '#fff', fontFamily: font.sans, fontWeight: 700, lineHeight: '1.4', flex: 1 }}>{card.title}</p>
+      {/* Area strip */}
+      {area && (
+        <div style={{
+          background:     `${hex}12`,
+          borderBottom:   `1px solid ${hex}24`,
+          padding:        '5px 14px',
+          display:        'flex',
+          justifyContent: 'space-between',
+          alignItems:     'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div aria-hidden="true" style={{ width: '5px', height: '5px', borderRadius: '50%', background: hex, flexShrink: 0, boxShadow: `0 0 4px ${hex}50` }} />
+            <span style={{ fontSize: '9px', color: hex, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: font.sans }}>
+              {area.name}
+            </span>
+          </div>
           <PriorityBadge value={card.priority} />
         </div>
+      )}
+
+      {/* Body */}
+      <div style={{ padding: area ? '10px 14px 10px' : '12px 14px 10px' }}>
+        {area ? (
+          <p style={{ margin: '0 0 6px', fontSize: '13px', color: color.text, fontWeight: 700, fontFamily: font.sans, lineHeight: '1.35' }}>
+            {card.title}
+          </p>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: color.text, fontWeight: 700, fontFamily: font.sans, flex: 1, lineHeight: '1.35' }}>
+              {card.title}
+            </p>
+            <PriorityBadge value={card.priority} size="xs" />
+          </div>
+        )}
+
         {card.description && (
-          <p style={{ margin: '0 0 8px', fontSize: '11px', color: '#ccc', fontFamily: font.sans, fontWeight: 600 }}>
-            {card.description.slice(0, 80)}{card.description.length > 80 ? '…' : ''}
+          <p style={{
+            margin: '0 0 8px', fontSize: '11px', color: color.muted, fontFamily: font.sans, lineHeight: '1.55',
+            display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>
+            {card.description}
           </p>
         )}
-        {area && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: hex }} />
-            <span style={{ fontSize: '11px', color: '#fff', fontFamily: font.mono, fontWeight: 700 }}>{area.name}</span>
+
+        {(project || epic) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px', overflow: 'hidden', minWidth: 0 }}>
+            {project && (
+              <span style={{ fontSize: '10px', color: color.muted, fontFamily: font.mono, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '1 1 0', minWidth: 0 }}>
+                {project.name}
+              </span>
+            )}
+            {project && epic && (
+              <span aria-hidden="true" style={{ color: color.muted2, fontSize: '10px', flexShrink: 0 }}>›</span>
+            )}
+            {epic && (
+              <span style={{ fontSize: '10px', color: color.muted2, fontFamily: font.mono, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: '1 1 0', minWidth: 0 }}>
+                {epic.name}
+              </span>
+            )}
+          </div>
+        )}
+
+        {card.labels?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {card.labels.map(l => (
+              <span key={l} style={{ fontSize: '9px', color: color.muted, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: radius.xs, padding: '2px 6px', fontFamily: font.mono }}>
+                #{l}
+              </span>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Action buttons */}
-      {!isDragOverlay && (
-        <div style={{ display: 'flex', gap: '5px', borderTop: `1px solid ${color.border}`, paddingTop: '8px', flexWrap: 'wrap' }}>
+      {/* Footer: promote button only for backlog */}
+      {!isDragOverlay && card.pre_workflow_stage === 'backlog' && (
+        <div
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+          style={{ borderTop: `1px solid ${color.border}`, padding: '0 14px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', minHeight: '44px' }}
+        >
           <button
-            onClick={e => { e.stopPropagation(); onEdit(card); }}
-            style={{ background: 'transparent', border: `1px solid ${color.border2}`, color: '#fff', borderRadius: '5px', padding: '3px 8px', cursor: 'pointer', fontSize: '10px', fontFamily: font.mono, fontWeight: 700, marginLeft: 'auto' }}
+            onClick={onPromote}
+            style={{
+              background:   `${color.yellow}18`,
+              border:       `1px solid ${color.yellow}40`,
+              color:        color.yellow,
+              borderRadius: '5px',
+              padding:      '6px 12px',
+              cursor:       'pointer',
+              fontSize:     '10px',
+              fontFamily:   font.mono,
+              fontWeight:   700,
+              minHeight:    '44px',
+              display:      'flex',
+              alignItems:   'center',
+            }}
           >
-            ✏
+            → Workflow
           </button>
-          {card.pre_workflow_stage === 'backlog' && (
-            <button
-              onClick={e => { e.stopPropagation(); onPromote(card); }}
-              style={{ background: color.yellow, border: 'none', color: '#000', borderRadius: '5px', padding: '3px 10px', cursor: 'pointer', fontSize: '10px', fontFamily: font.mono, fontWeight: 800 }}
-            >
-              → Workflow
-            </button>
-          )}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Sortable wrapper ─────────────────────────────────────────────────────────
+// ─── SortableTriageCard ───────────────────────────────────────────────────────
 
-function SortableTriageCard({ card, areas, isSelected, onSelect, onEdit, onPromote }) {
+function SortableTriageCard({ card, areas, epic, project, onClick, onPromote }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
+  const [focused, setFocused] = useState(false);
 
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      role="article"
+      aria-label={card.title}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       style={{
-        transform:   CSS.Transform.toString(transform),
+        transform:     CSS.Transform.toString(transform),
         transition,
-        opacity:     isDragging ? 0 : 1,
-        touchAction: 'none',
+        opacity:       isDragging ? 0 : 1,
+        touchAction:   'none',
+        outline:       focused ? `2px solid ${color.yellow}` : 'none',
+        outlineOffset: focused ? '2px' : '0',
+        borderRadius:  radius.md,
       }}
     >
       <TriageCard
         card={card}
         areas={areas}
-        isSelected={isSelected}
-        onSelect={onSelect}
-        onEdit={onEdit}
+        epic={epic}
+        project={project}
+        onClick={onClick}
         onPromote={onPromote}
       />
     </div>
   );
 }
 
-// ─── Column ───────────────────────────────────────────────────────────────────
+// ─── TriageColumn ─────────────────────────────────────────────────────────────
 
-function TriageColumn({ id, label, accent, desc, cards, areas, selectedId, onSelect, onEdit, onPromote }) {
+function TriageColumn({ id, label, accent, desc, cards, areas, epicById, projectById, onCardClick, onPromote }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
-    <div style={{ flex: 1, minWidth: '240px', background: color.s1, border: `1px solid ${isOver ? `${accent}80` : color.border}`, borderTop: `4px solid ${accent}`, borderRadius: '12px', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'border-color 150ms, box-shadow 150ms', boxShadow: isOver ? `0 0 0 2px ${accent}30` : 'none' }}>
+    <div style={{
+      flex:          1,
+      minWidth:      '240px',
+      background:    color.s1,
+      borderTop:     `4px solid ${accent}`,
+      borderRight:   `1px solid ${isOver ? `${accent}80` : color.border}`,
+      borderBottom:  `1px solid ${isOver ? `${accent}80` : color.border}`,
+      borderLeft:    `1px solid ${isOver ? `${accent}80` : color.border}`,
+      borderRadius:  '12px',
+      display:       'flex',
+      flexDirection: 'column',
+      overflow:      'hidden',
+      transition:    'border-right-color 150ms, border-bottom-color 150ms, border-left-color 150ms, box-shadow 150ms',
+      boxShadow:     isOver ? `0 0 0 2px ${accent}30` : 'none',
+    }}>
       {/* Header */}
       <div style={{ padding: '12px 14px', borderBottom: `1px solid ${color.border}`, background: '#0d0d0d', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
@@ -143,17 +229,23 @@ function TriageColumn({ id, label, accent, desc, cards, areas, selectedId, onSel
               {isOver ? 'Soltar aquí' : 'vacío'}
             </div>
           ) : (
-            cards.map(c => (
-              <SortableTriageCard
-                key={c.id}
-                card={c}
-                areas={areas}
-                isSelected={selectedId === c.id}
-                onSelect={onSelect}
-                onEdit={onEdit}
-                onPromote={onPromote}
-              />
-            ))
+            cards.map(c => {
+              const epic    = c.epic_id ? epicById[c.epic_id] ?? null : null;
+              const project = c.project_id
+                ? projectById[c.project_id] ?? null
+                : (epic?.project_id ? projectById[epic.project_id] ?? null : null);
+              return (
+                <SortableTriageCard
+                  key={c.id}
+                  card={c}
+                  areas={areas}
+                  epic={epic}
+                  project={project}
+                  onClick={onCardClick}
+                  onPromote={() => onPromote(c)}
+                />
+              );
+            })
           )}
         </div>
       </SortableContext>
@@ -161,7 +253,7 @@ function TriageColumn({ id, label, accent, desc, cards, areas, selectedId, onSel
   );
 }
 
-// ─── View ─────────────────────────────────────────────────────────────────────
+// ─── TriageView ───────────────────────────────────────────────────────────────
 
 export default function TriageView() {
   const activeSpaceId = useUIStore(s => s.activeSpaceId);
@@ -171,7 +263,6 @@ export default function TriageView() {
   const { mutate: promoteCard     } = usePromoteCard(activeSpaceId);
   const { mutate: moveTriageStage } = useMoveTriageStage(activeSpaceId);
 
-  const [selected,      setSelected]      = useState(null);
   const [editCard,      setEditCard]      = useState(null);
   const [promoteTarget, setPromoteTarget] = useState(null);
   const [activeDragId,  setActiveDragId]  = useState(null);
@@ -180,15 +271,37 @@ export default function TriageView() {
   const space     = spaces.find(s => s.id === activeSpaceId);
   const allStates = space?.workflow_states ?? [];
 
+  // ── Epic / project data (same pattern as WorkspaceLayout) ─────────────────
+  const { data: epics = [] } = useEpicsBySpace(activeSpaceId);
+  const epicById = useMemo(
+    () => Object.fromEntries(epics.map(e => [e.id, e])),
+    [epics],
+  );
+  const projectIds = useMemo(
+    () => [...new Set(epics.map(e => e.project_id).filter(Boolean))],
+    [epics],
+  );
+  const projectResults = useQueries({
+    queries: projectIds.map(id => ({
+      queryKey: ['project', id],
+      queryFn:  () => projectsApi.getById(id),
+    })),
+  });
+  const projectResultsKey = projectResults.map(r => r.data?.id ?? '').join(',');
+  const projectById = useMemo(() => {
+    const map = {};
+    projectResults.forEach(r => { if (r.data?.id) map[r.data.id] = r.data; });
+    return map;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectResultsKey]);
+
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
-  // Derived: pre-workflow cards (computed before stageOrder useState for lazy init)
+  // Derived: pre-workflow cards
   const preCards = cards.filter(c => c.pre_workflow_stage);
 
-  // In-memory order: { [stageId]: [cardId, ...] }
-  // Lazy init avoids "vacío" flash on first render
   const [stageOrder, setStageOrder] = useState(() => {
     const init = {};
     STAGES.forEach(s => {
@@ -197,11 +310,15 @@ export default function TriageView() {
     return init;
   });
 
-  const orderRef    = useRef({});
-  const sourceRef   = useRef(null);
-  const snapshotRef = useRef(null);
+  const orderRef          = useRef({});
+  const sourceRef         = useRef(null);
+  const snapshotRef       = useRef(null);
+  const dragErrorTimerRef = useRef(null);
 
-  // Sync when cards or space change
+  useEffect(() => () => {
+    if (dragErrorTimerRef.current) clearTimeout(dragErrorTimerRef.current);
+  }, []);
+
   useEffect(() => {
     setStageOrder(prev => {
       const next = {};
@@ -263,14 +380,14 @@ export default function TriageView() {
 
     const activeId     = active.id;
     const overId       = over.id;
-    const originalStge = sourceRef.current;
-    const snapshot     = snapshotRef.current;
-    const order        = orderRef.current;
+    const originalStage = sourceRef.current;
+    const snapshot      = snapshotRef.current;
+    const order         = orderRef.current;
 
     const currentStage = Object.keys(order).find(id => order[id].includes(activeId));
-    if (!originalStge || !currentStage) return;
+    if (!originalStage || !currentStage) return;
 
-    if (originalStge === currentStage) {
+    if (originalStage === currentStage) {
       const isOverCol = STAGES.some(s => s.id === overId);
       if (!isOverCol && activeId !== overId) {
         setStageOrder(prev => {
@@ -287,7 +404,8 @@ export default function TriageView() {
           setStageOrder(snapshot);
           const msg = err?.response?.data?.detail ?? 'Movimiento no permitido';
           setDragError(msg);
-          setTimeout(() => setDragError(null), 4000);
+          if (dragErrorTimerRef.current) clearTimeout(dragErrorTimerRef.current);
+          dragErrorTimerRef.current = setTimeout(() => setDragError(null), 4000);
         },
       });
     }
@@ -295,8 +413,12 @@ export default function TriageView() {
 
   const handlePromote = (stateId) => {
     if (!promoteTarget) return;
-    promoteCard({ cardId: promoteTarget.id, targetStateId: stateId });
+    const target = promoteTarget;
     setPromoteTarget(null);
+    promoteCard(
+      { cardId: target.id, targetStateId: stateId },
+      { onError: () => setDragError('No se pudo mover la card al workflow') },
+    );
   };
 
   const activeDragCard = activeDragId ? preCards.find(c => c.id === activeDragId) : null;
@@ -321,9 +443,9 @@ export default function TriageView() {
               desc={desc}
               cards={getStageCards(id)}
               areas={areas}
-              selectedId={selected?.id}
-              onSelect={c => setSelected(prev => prev?.id === c.id ? null : c)}
-              onEdit={setEditCard}
+              epicById={epicById}
+              projectById={projectById}
+              onCardClick={setEditCard}
               onPromote={c => setPromoteTarget(c)}
             />
           ))}
@@ -334,44 +456,19 @@ export default function TriageView() {
             <TriageCard
               card={activeDragCard}
               areas={areas}
-              isSelected={false}
-              onSelect={() => {}}
-              onEdit={() => {}}
-              onPromote={() => {}}
+              epic={activeDragCard.epic_id ? epicById[activeDragCard.epic_id] ?? null : null}
+              project={
+                activeDragCard.project_id
+                  ? projectById[activeDragCard.project_id] ?? null
+                  : (activeDragCard.epic_id && epicById[activeDragCard.epic_id]?.project_id
+                      ? projectById[epicById[activeDragCard.epic_id].project_id] ?? null
+                      : null)
+              }
               isDragOverlay
             />
           ) : null}
         </DragOverlay>
       </DndContext>
-
-      {/* Detail panel */}
-      {selected && !promoteTarget && !editCard && (
-        <div style={{ width: '280px', flexShrink: 0, borderLeft: `1px solid ${color.border}`, background: '#0d0d0d', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', borderBottom: `1px solid ${color.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: '#fff', fontFamily: font.mono, fontWeight: 800, letterSpacing: '0.1em' }}>DETALLE</span>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button onClick={() => setEditCard(selected)} style={{ background: 'none', border: `1px solid ${color.border2}`, borderRadius: '5px', color: color.yellow, cursor: 'pointer', padding: '3px 9px', fontSize: '11px', fontFamily: font.mono, fontWeight: 700 }}>✏ Editar</button>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '18px' }}>✕</button>
-            </div>
-          </div>
-          <div style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <PriorityBadge value={selected.priority} size="md" />
-            <h3 style={{ margin: 0, fontSize: '15px', color: '#fff', fontFamily: font.sans, fontWeight: 800, lineHeight: '1.4' }}>{selected.title}</h3>
-            {selected.description && <p style={{ margin: 0, fontSize: '12px', color: '#ccc', fontFamily: font.sans, fontWeight: 600, lineHeight: '1.6' }}>{selected.description}</p>}
-            <div style={{ padding: '10px', background: color.s2, borderRadius: '8px', border: `1px solid ${color.border}` }}>
-              <p style={{ margin: '0 0 3px', fontSize: '10px', color: '#fff', fontFamily: font.mono, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Stage</p>
-              <span style={{ fontSize: '13px', fontFamily: font.mono, fontWeight: 800, color: STAGES.find(s => s.id === selected.pre_workflow_stage)?.accent ?? '#888' }}>
-                {selected.pre_workflow_stage?.toUpperCase()}
-              </span>
-            </div>
-            {selected.labels?.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {selected.labels.map(l => <span key={l} style={{ fontSize: '11px', color: '#fff', background: color.s3, border: `1px solid ${color.border2}`, borderRadius: '4px', padding: '3px 8px', fontFamily: font.mono, fontWeight: 700 }}>#{l}</span>)}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Promote modal */}
       {promoteTarget && (

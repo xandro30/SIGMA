@@ -72,11 +72,12 @@ async def create_card(
         space_id=SpaceId(space_id),
         title=CardTitle(body.title),
         initial_stage=initial_stage,
+        description=body.description,
         area_id=AreaId(body.area_id) if body.area_id else None,
         project_id=ProjectId(body.project_id) if body.project_id else None,
         epic_id=EpicId(body.epic_id) if body.epic_id else None,
         priority=Priority(body.priority) if body.priority else None,
-        labels=set(body.labels) if body.labels else set(),
+        labels=set(body.labels),
     ))
     card = await card_repo.get_by_id(card_id)
     return card_to_response(card)

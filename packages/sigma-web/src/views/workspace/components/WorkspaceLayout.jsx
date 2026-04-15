@@ -1,8 +1,12 @@
+import { useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { color, font } from '../../../shared/tokens';
 import { useUIStore } from '../../../shared/store/useUIStore';
 import { useSpaces } from '../../../entities/space/hooks/useSpaces';
 import { useCards } from '../../../entities/card/hooks/useCards';
 import { useAreas } from '../../../entities/area/hooks/useAreas';
+import { useEpicsBySpace } from '../../../entities/epic/hooks/useEpics';
+import { projectsApi } from '../../../api/projects';
 import KanbanBoard from './KanbanBoard';
 import { WS } from '../../../shared/workStates';
 import { FINISH_ID } from '../../../shared/tokens';
@@ -13,6 +17,28 @@ export default function WorkspaceLayout() {
   const { data: cards  = [], isLoading } = useCards(activeSpaceId);
   const { data: areas  = [] } = useAreas();
   const space = spaces.find(s => s.id === activeSpaceId);
+
+  const { data: epics = [] } = useEpicsBySpace(activeSpaceId);
+
+  const epicById = useMemo(
+    () => Object.fromEntries(epics.map(e => [e.id, e])),
+    [epics]
+  );
+  const projectIds = useMemo(
+    () => [...new Set(epics.map(e => e.project_id).filter(Boolean))],
+    [epics]
+  );
+  const projectResults = useQueries({
+    queries: projectIds.map(id => ({
+      queryKey: ['project', id],
+      queryFn:  () => projectsApi.getById(id),
+    })),
+  });
+  const projectById = useMemo(() => {
+    const map = {};
+    projectResults.forEach(r => { if (r.data?.id) map[r.data.id] = r.data; });
+    return map;
+  }, [projectResults]);
 
   const wfCards    = cards.filter(c => c.workflow_state_id);
   const inProgress = wfCards.filter(c => c.workflow_state_id !== FINISH_ID).length;
@@ -38,7 +64,7 @@ export default function WorkspaceLayout() {
         </div>
         {isLoading && <span style={{ fontSize:'11px', color:'#888', fontFamily:font.mono, marginLeft:'auto' }}>Cargando…</span>}
       </div>
-      <KanbanBoard space={space} cards={cards} areas={areas} />
+      <KanbanBoard space={space} cards={cards} areas={areas} epicById={epicById} projectById={projectById} />
     </div>
   );
 }

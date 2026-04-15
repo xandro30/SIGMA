@@ -19,7 +19,7 @@ export const fieldStyle = {
 export function Field({ label, children }) {
   return (
     <div style={{ marginBottom: '16px' }}>
-      <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted2, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700, textTransform: 'uppercase' }}>
+      <p style={{ margin: '0 0 6px', fontSize: '9px', color: color.muted, fontFamily: font.mono, letterSpacing: '0.1em', fontWeight: 700, textTransform: 'uppercase' }}>
         {label}
       </p>
       {children}
